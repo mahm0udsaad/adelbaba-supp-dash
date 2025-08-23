@@ -17,23 +17,7 @@
     "progress": 75
   },
   "plans": [
-    {
-      "id": "basic",
-      "name": "Basic Supplier",
-      "nameAr": "مورد أساسي",
-      "level": "basic",
-      "price": 0,
-      "currency": "USD",
-      "period": "month",
-      "periodAr": "شهر",
-      "badge": "🥉",
-      "color": "text-gray-600",
-      "popular": false,
-      "features": ["Up to 50 product listings", "Basic customer support", "Standard analytics", "Basic profile"],
-      "featuresAr": ["حتى 50 قائمة منتج", "دعم عملاء أساسي", "تحليلات قياسية", "ملف شخصي أساسي"],
-      "benefits": ["Free to start", "Basic seller tools", "Standard visibility"],
-      "benefitsAr": ["مجاني للبدء", "أدوات بائع أساسية", "رؤية قياسية"]
-    },
+
     {
       "id": "silver",
       "name": "Silver Supplier",
