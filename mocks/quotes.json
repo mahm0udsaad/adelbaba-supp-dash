@@ -1,0 +1,54 @@
+[
+  {
+    "id": "QUO-001",
+    "rfqId": "RFQ-001",
+    "supplierId": "supplier_001",
+    "supplierName": "Al-Masri Trading Co.",
+    "unitPrice": 42,
+    "currency": "USD",
+    "moq": 100,
+    "leadTimeDays": 25,
+    "validityDays": 30,
+    "paymentTerms": "30% T/T advance, 70% before shipment",
+    "deliveryTerms": "FOB Shanghai",
+    "notes": "We can provide CE and RoHS certificates. Sample available for $50 including shipping.",
+    "status": "submitted",
+    "createdAt": "2024-01-21T10:30:00Z",
+    "updatedAt": "2024-01-21T10:30:00Z",
+    "attachments": [
+      "/placeholder.svg?height=200&width=300&text=Product+Catalog",
+      "/placeholder.svg?height=200&width=300&text=CE+Certificate"
+    ],
+    "specifications": [
+      { "key": "Power", "value": "120W" },
+      { "key": "Lumens", "value": "16,800 lm" },
+      { "key": "Color Temperature", "value": "4500K" },
+      { "key": "IP Rating", "value": "IP66" },
+      { "key": "Lifespan", "value": "50,000 hours" }
+    ]
+  },
+  {
+    "id": "QUO-002",
+    "rfqId": "RFQ-002",
+    "supplierId": "supplier_001",
+    "supplierName": "Al-Masri Trading Co.",
+    "unitPrice": 7.5,
+    "currency": "USD",
+    "moq": 500,
+    "leadTimeDays": 35,
+    "validityDays": 45,
+    "paymentTerms": "L/C at sight",
+    "deliveryTerms": "CIF Vancouver",
+    "notes": "Premium quality cotton from certified suppliers. Custom printing available at additional cost.",
+    "status": "submitted",
+    "createdAt": "2024-01-19T15:20:00Z",
+    "updatedAt": "2024-01-19T15:20:00Z",
+    "attachments": ["/placeholder.svg?height=200&width=300&text=Fabric+Samples"],
+    "specifications": [
+      { "key": "Material", "value": "100% Combed Cotton" },
+      { "key": "Weight", "value": "190 GSM" },
+      { "key": "Shrinkage", "value": "< 3%" },
+      { "key": "Color Fastness", "value": "Grade 4+" }
+    ]
+  }
+]

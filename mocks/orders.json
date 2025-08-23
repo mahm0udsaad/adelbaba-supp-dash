@@ -1,0 +1,299 @@
+[
+  {
+    "id": "ORD-001",
+    "buyerCompany": "Global Retail Co.",
+    "buyerContact": {
+      "name": "Jennifer Martinez",
+      "email": "jennifer@globalretail.com",
+      "phone": "+1-555-0987"
+    },
+    "items": [
+      {
+        "productId": "PROD-001",
+        "productName": "Wireless Bluetooth Headphones",
+        "sku": "WBH-2024-001",
+        "qty": 150,
+        "unitPrice": 30,
+        "totalPrice": 4500
+      }
+    ],
+    "currency": "USD",
+    "subtotal": 4500,
+    "shippingCost": 250,
+    "tax": 475,
+    "total": 5225,
+    "tradeAssurance": {
+      "enabled": true,
+      "escrowStatus": "released",
+      "escrowAmount": 5225,
+      "protectionPeriod": 30,
+      "releaseDate": "2024-01-28T10:30:00Z"
+    },
+    "shipping": {
+      "carrier": "DHL Express",
+      "tracking": "1234567890",
+      "method": "Air Freight",
+      "etaDays": 7,
+      "shippedDate": "2024-01-20T14:30:00Z",
+      "deliveredDate": "2024-01-27T09:15:00Z"
+    },
+    "status": "delivered",
+    "priority": "high",
+    "paymentStatus": "paid",
+    "paymentMethod": "T/T",
+    "createdAt": "2024-01-15T10:30:00Z",
+    "updatedAt": "2024-01-28T10:30:00Z",
+    "notes": "Rush order for holiday season inventory",
+    "attachments": ["/placeholder.svg?height=200&width=300&text=Purchase+Order"]
+  },
+  {
+    "id": "ORD-002",
+    "buyerCompany": "Tech Startup Inc.",
+    "buyerContact": {
+      "name": "Alex Chen",
+      "email": "alex@techstartup.com",
+      "phone": "+1-555-0456"
+    },
+    "items": [
+      {
+        "productId": "PROD-002",
+        "productName": "USB-C Charging Cables",
+        "sku": "USB-C-001",
+        "qty": 500,
+        "unitPrice": 2.5,
+        "totalPrice": 1250
+      }
+    ],
+    "currency": "USD",
+    "subtotal": 1250,
+    "shippingCost": 150,
+    "tax": 140,
+    "total": 1540,
+    "tradeAssurance": {
+      "enabled": true,
+      "escrowStatus": "held",
+      "escrowAmount": 1540,
+      "protectionPeriod": 30,
+      "releaseDate": null
+    },
+    "shipping": {
+      "carrier": "FedEx",
+      "tracking": "9876543210",
+      "method": "Sea Freight",
+      "etaDays": 14,
+      "shippedDate": "2024-01-22T16:45:00Z",
+      "deliveredDate": null
+    },
+    "status": "shipped",
+    "priority": "medium",
+    "paymentStatus": "paid",
+    "paymentMethod": "L/C",
+    "createdAt": "2024-01-14T14:20:00Z",
+    "updatedAt": "2024-01-22T16:45:00Z",
+    "notes": "Standard shipping acceptable",
+    "attachments": []
+  },
+  {
+    "id": "ORD-003",
+    "buyerCompany": "Fashion Forward LLC",
+    "buyerContact": {
+      "name": "Sarah Johnson",
+      "email": "sarah@fashionforward.com",
+      "phone": "+1-555-0789"
+    },
+    "items": [
+      {
+        "productId": "PROD-003",
+        "productName": "Cotton T-Shirts - Mixed Colors",
+        "sku": "CT-MIX-001",
+        "qty": 200,
+        "unitPrice": 8.5,
+        "totalPrice": 1700
+      },
+      {
+        "productId": "PROD-004",
+        "productName": "Cotton T-Shirts - White",
+        "sku": "CT-WHT-001",
+        "qty": 300,
+        "unitPrice": 8,
+        "totalPrice": 2400
+      }
+    ],
+    "currency": "USD",
+    "subtotal": 4100,
+    "shippingCost": 300,
+    "tax": 440,
+    "total": 4840,
+    "tradeAssurance": {
+      "enabled": true,
+      "escrowStatus": "pending",
+      "escrowAmount": 4840,
+      "protectionPeriod": 30,
+      "releaseDate": null
+    },
+    "shipping": {
+      "carrier": null,
+      "tracking": null,
+      "method": "Air Freight",
+      "etaDays": 10,
+      "shippedDate": null,
+      "deliveredDate": null
+    },
+    "status": "in_escrow",
+    "priority": "medium",
+    "paymentStatus": "paid",
+    "paymentMethod": "T/T",
+    "createdAt": "2024-01-25T11:15:00Z",
+    "updatedAt": "2024-01-25T11:15:00Z",
+    "notes": "Please ensure proper packaging for international shipping",
+    "attachments": ["/placeholder.svg?height=200&width=300&text=Shipping+Instructions"]
+  },
+  {
+    "id": "ORD-004",
+    "buyerCompany": "Home Essentials Co",
+    "buyerContact": {
+      "name": "Lisa Wang",
+      "email": "lisa@homeessentials.com",
+      "phone": "+1-555-0321"
+    },
+    "items": [
+      {
+        "productId": "PROD-005",
+        "productName": "Stainless Steel Kitchen Set",
+        "sku": "SS-KIT-001",
+        "qty": 50,
+        "unitPrice": 45,
+        "totalPrice": 2250
+      }
+    ],
+    "currency": "USD",
+    "subtotal": 2250,
+    "shippingCost": 180,
+    "tax": 243,
+    "total": 2673,
+    "tradeAssurance": {
+      "enabled": false,
+      "escrowStatus": null,
+      "escrowAmount": 0,
+      "protectionPeriod": 0,
+      "releaseDate": null
+    },
+    "shipping": {
+      "carrier": null,
+      "tracking": null,
+      "method": "Sea Freight",
+      "etaDays": 21,
+      "shippedDate": null,
+      "deliveredDate": null
+    },
+    "status": "awaiting_payment",
+    "priority": "low",
+    "paymentStatus": "pending",
+    "paymentMethod": "L/C 90 days",
+    "createdAt": "2024-01-26T09:30:00Z",
+    "updatedAt": "2024-01-26T09:30:00Z",
+    "notes": "Waiting for L/C confirmation from buyer's bank",
+    "attachments": []
+  },
+  {
+    "id": "ORD-005",
+    "buyerCompany": "Audio Solutions Inc",
+    "buyerContact": {
+      "name": "Mike Chen",
+      "email": "mike@audiosolutions.com",
+      "phone": "+1-555-0654"
+    },
+    "items": [
+      {
+        "productId": "PROD-006",
+        "productName": "Bluetooth Portable Speakers",
+        "sku": "BT-SPK-001",
+        "qty": 100,
+        "unitPrice": 28,
+        "totalPrice": 2800
+      }
+    ],
+    "currency": "USD",
+    "subtotal": 2800,
+    "shippingCost": 200,
+    "tax": 300,
+    "total": 3300,
+    "tradeAssurance": {
+      "enabled": true,
+      "escrowStatus": "disputed",
+      "escrowAmount": 3300,
+      "protectionPeriod": 30,
+      "releaseDate": null,
+      "disputeReason": "Product quality issues reported by buyer",
+      "disputeDate": "2024-01-29T14:20:00Z"
+    },
+    "shipping": {
+      "carrier": "UPS",
+      "tracking": "1Z999AA1234567890",
+      "method": "Air Freight",
+      "etaDays": 5,
+      "shippedDate": "2024-01-24T10:00:00Z",
+      "deliveredDate": "2024-01-29T16:30:00Z"
+    },
+    "status": "disputed",
+    "priority": "high",
+    "paymentStatus": "paid",
+    "paymentMethod": "T/T",
+    "createdAt": "2024-01-20T13:45:00Z",
+    "updatedAt": "2024-01-29T14:20:00Z",
+    "notes": "Dispute opened regarding product specifications",
+    "attachments": [
+      "/placeholder.svg?height=200&width=300&text=Quality+Report",
+      "/placeholder.svg?height=200&width=300&text=Dispute+Evidence"
+    ]
+  },
+  {
+    "id": "ORD-006",
+    "buyerCompany": "Green Energy Solutions",
+    "buyerContact": {
+      "name": "David Rodriguez",
+      "email": "david@greenenergy.com",
+      "phone": "+1-555-0987"
+    },
+    "items": [
+      {
+        "productId": "PROD-007",
+        "productName": "Solar Panel Mounting Brackets",
+        "sku": "SPM-BRK-001",
+        "qty": 25,
+        "unitPrice": 120,
+        "totalPrice": 3000
+      }
+    ],
+    "currency": "USD",
+    "subtotal": 3000,
+    "shippingCost": 400,
+    "tax": 340,
+    "total": 3740,
+    "tradeAssurance": {
+      "enabled": true,
+      "escrowStatus": "refunded",
+      "escrowAmount": 3740,
+      "protectionPeriod": 30,
+      "releaseDate": null,
+      "refundReason": "Order cancelled by mutual agreement",
+      "refundDate": "2024-01-30T11:00:00Z"
+    },
+    "shipping": {
+      "carrier": null,
+      "tracking": null,
+      "method": null,
+      "etaDays": null,
+      "shippedDate": null,
+      "deliveredDate": null
+    },
+    "status": "cancelled",
+    "priority": "medium",
+    "paymentStatus": "refunded",
+    "paymentMethod": "T/T",
+    "createdAt": "2024-01-18T15:20:00Z",
+    "updatedAt": "2024-01-30T11:00:00Z",
+    "notes": "Cancelled due to specification changes from buyer",
+    "attachments": ["/placeholder.svg?height=200&width=300&text=Cancellation+Agreement"]
+  }
+]

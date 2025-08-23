@@ -1,0 +1,289 @@
+[
+  {
+    "id": "PROD-001",
+    "title": "Wireless Bluetooth Headphones - Premium Quality",
+    "sku": "WBH-2024-001",
+    "categoryId": "electronics",
+    "category": "Electronics & Electrical",
+    "images": [
+      "/placeholder.svg?height=400&width=400&text=Bluetooth+Headphones+Front",
+      "/placeholder.svg?height=400&width=400&text=Bluetooth+Headphones+Side",
+      "/placeholder.svg?height=400&width=400&text=Bluetooth+Headphones+Package"
+    ],
+    "description": "High-quality wireless Bluetooth headphones with noise cancellation, premium sound quality, and long battery life. Perfect for music lovers and professionals.",
+    "specs": [
+      { "key": "Bluetooth Version", "value": "5.0" },
+      { "key": "Battery Life", "value": "30 hours" },
+      { "key": "Charging Time", "value": "2 hours" },
+      { "key": "Frequency Response", "value": "20Hz-20kHz" },
+      { "key": "Impedance", "value": "32Ω" },
+      { "key": "Weight", "value": "250g" },
+      { "key": "Noise Cancellation", "value": "Active ANC" },
+      { "key": "Connectivity", "value": "Bluetooth, 3.5mm AUX" }
+    ],
+    "moq": 50,
+    "pricingTiers": [
+      { "minQty": 50, "maxQty": 99, "unitPrice": 32 },
+      { "minQty": 100, "maxQty": 499, "unitPrice": 30 },
+      { "minQty": 500, "maxQty": 999, "unitPrice": 28 },
+      { "minQty": 1000, "unitPrice": 25 }
+    ],
+    "sampleAvailable": true,
+    "samplePrice": 45,
+    "inventory": [
+      { "warehouseId": "WH-SH-001", "warehouseName": "Shanghai Main", "qty": 1250 },
+      { "warehouseId": "WH-GZ-001", "warehouseName": "Guangzhou Branch", "qty": 800 },
+      { "warehouseId": "WH-SZ-001", "warehouseName": "Shenzhen Hub", "qty": 450 }
+    ],
+    "totalStock": 2500,
+    "status": "active",
+    "visibility": "public",
+    "tags": ["bluetooth", "headphones", "wireless", "premium", "noise-cancellation"],
+    "certifications": ["CE", "FCC", "RoHS"],
+    "leadTimeDays": 15,
+    "createdAt": "2024-01-10T10:30:00Z",
+    "updatedAt": "2024-01-28T14:20:00Z",
+    "views": 1245,
+    "inquiries": 89,
+    "orders": 23
+  },
+  {
+    "id": "PROD-002",
+    "title": "USB-C Charging Cables - Fast Charging",
+    "sku": "USB-C-001",
+    "categoryId": "electronics",
+    "category": "Electronics & Electrical",
+    "images": [
+      "/placeholder.svg?height=400&width=400&text=USB-C+Cable+Black",
+      "/placeholder.svg?height=400&width=400&text=USB-C+Cable+White",
+      "/placeholder.svg?height=400&width=400&text=USB-C+Cable+Package"
+    ],
+    "description": "High-speed USB-C charging cables with fast charging support up to 100W. Durable braided design with reinforced connectors.",
+    "specs": [
+      { "key": "Cable Length", "value": "1m, 2m options" },
+      { "key": "Power Delivery", "value": "Up to 100W" },
+      { "key": "Data Transfer", "value": "USB 3.0 - 5Gbps" },
+      { "key": "Material", "value": "Braided Nylon" },
+      { "key": "Connector", "value": "USB-C to USB-C" },
+      { "key": "Compatibility", "value": "Universal USB-C devices" },
+      { "key": "Certification", "value": "USB-IF Certified" }
+    ],
+    "moq": 100,
+    "pricingTiers": [
+      { "minQty": 100, "maxQty": 499, "unitPrice": 3.5 },
+      { "minQty": 500, "maxQty": 999, "unitPrice": 3.0 },
+      { "minQty": 1000, "maxQty": 4999, "unitPrice": 2.5 },
+      { "minQty": 5000, "unitPrice": 2.0 }
+    ],
+    "sampleAvailable": true,
+    "samplePrice": 8,
+    "inventory": [
+      { "warehouseId": "WH-SH-001", "warehouseName": "Shanghai Main", "qty": 5000 },
+      { "warehouseId": "WH-GZ-001", "warehouseName": "Guangzhou Branch", "qty": 3200 },
+      { "warehouseId": "WH-SZ-001", "warehouseName": "Shenzhen Hub", "qty": 2800 }
+    ],
+    "totalStock": 11000,
+    "status": "active",
+    "visibility": "public",
+    "tags": ["usb-c", "charging", "cable", "fast-charging", "braided"],
+    "certifications": ["USB-IF", "CE", "FCC"],
+    "leadTimeDays": 7,
+    "createdAt": "2024-01-08T15:45:00Z",
+    "updatedAt": "2024-01-25T09:30:00Z",
+    "views": 2156,
+    "inquiries": 156,
+    "orders": 45
+  },
+  {
+    "id": "PROD-003",
+    "title": "Cotton T-Shirts - Premium Combed Cotton",
+    "sku": "CT-MIX-001",
+    "categoryId": "textiles",
+    "category": "Textiles & Apparel",
+    "images": [
+      "/placeholder.svg?height=400&width=400&text=Cotton+T-Shirt+Colors",
+      "/placeholder.svg?height=400&width=400&text=Cotton+T-Shirt+White",
+      "/placeholder.svg?height=400&width=400&text=Cotton+T-Shirt+Black"
+    ],
+    "description": "Premium quality cotton t-shirts made from 100% combed cotton. Soft, comfortable, and durable with excellent color retention.",
+    "specs": [
+      { "key": "Material", "value": "100% Combed Cotton" },
+      { "key": "Weight", "value": "180-200 GSM" },
+      { "key": "Sizes", "value": "XS, S, M, L, XL, XXL" },
+      { "key": "Colors", "value": "White, Black, Navy, Gray, Red" },
+      { "key": "Neck Style", "value": "Round Neck" },
+      { "key": "Sleeve", "value": "Short Sleeve" },
+      { "key": "Fit", "value": "Regular Fit" },
+      { "key": "Care", "value": "Machine Washable" }
+    ],
+    "moq": 200,
+    "pricingTiers": [
+      { "minQty": 200, "maxQty": 499, "unitPrice": 9.5 },
+      { "minQty": 500, "maxQty": 999, "unitPrice": 8.5 },
+      { "minQty": 1000, "maxQty": 2999, "unitPrice": 7.5 },
+      { "minQty": 3000, "unitPrice": 6.5 }
+    ],
+    "sampleAvailable": true,
+    "samplePrice": 15,
+    "inventory": [
+      { "warehouseId": "WH-SH-001", "warehouseName": "Shanghai Main", "qty": 800 },
+      { "warehouseId": "WH-GZ-001", "warehouseName": "Guangzhou Branch", "qty": 1200 },
+      { "warehouseId": "WH-SZ-001", "warehouseName": "Shenzhen Hub", "qty": 600 }
+    ],
+    "totalStock": 2600,
+    "status": "active",
+    "visibility": "public",
+    "tags": ["cotton", "t-shirt", "apparel", "comfortable", "premium"],
+    "certifications": ["OEKO-TEX", "GOTS"],
+    "leadTimeDays": 25,
+    "createdAt": "2024-01-05T11:20:00Z",
+    "updatedAt": "2024-01-22T16:45:00Z",
+    "views": 1876,
+    "inquiries": 134,
+    "orders": 31
+  },
+  {
+    "id": "PROD-004",
+    "title": "Bluetooth Portable Speakers - Waterproof",
+    "sku": "BT-SPK-001",
+    "categoryId": "electronics",
+    "category": "Electronics & Electrical",
+    "images": [
+      "/placeholder.svg?height=400&width=400&text=Bluetooth+Speaker+Black",
+      "/placeholder.svg?height=400&width=400&text=Bluetooth+Speaker+Blue",
+      "/placeholder.svg?height=400&width=400&text=Bluetooth+Speaker+Features"
+    ],
+    "description": "Compact waterproof Bluetooth speakers with powerful sound, long battery life, and rugged design perfect for outdoor activities.",
+    "specs": [
+      { "key": "Bluetooth Version", "value": "5.0" },
+      { "key": "Battery Life", "value": "12 hours" },
+      { "key": "Water Resistance", "value": "IPX7" },
+      { "key": "Power Output", "value": "20W" },
+      { "key": "Frequency Response", "value": "60Hz-20kHz" },
+      { "key": "Connectivity", "value": "Bluetooth, AUX, USB-C" },
+      { "key": "Dimensions", "value": "180 x 65 x 65mm" },
+      { "key": "Weight", "value": "450g" }
+    ],
+    "moq": 50,
+    "pricingTiers": [
+      { "minQty": 50, "maxQty": 99, "unitPrice": 28 },
+      { "minQty": 100, "maxQty": 299, "unitPrice": 25 },
+      { "minQty": 300, "maxQty": 599, "unitPrice": 22 },
+      { "minQty": 600, "unitPrice": 20 }
+    ],
+    "sampleAvailable": true,
+    "samplePrice": 35,
+    "inventory": [
+      { "warehouseId": "WH-SH-001", "warehouseName": "Shanghai Main", "qty": 450 },
+      { "warehouseId": "WH-GZ-001", "warehouseName": "Guangzhou Branch", "qty": 320 },
+      { "warehouseId": "WH-SZ-001", "warehouseName": "Shenzhen Hub", "qty": 280 }
+    ],
+    "totalStock": 1050,
+    "status": "active",
+    "visibility": "public",
+    "tags": ["bluetooth", "speaker", "waterproof", "portable", "outdoor"],
+    "certifications": ["CE", "FCC", "IPX7"],
+    "leadTimeDays": 20,
+    "createdAt": "2024-01-12T09:15:00Z",
+    "updatedAt": "2024-01-26T11:30:00Z",
+    "views": 987,
+    "inquiries": 67,
+    "orders": 18
+  },
+  {
+    "id": "PROD-005",
+    "title": "Stainless Steel Kitchen Utensils Set",
+    "sku": "SS-KIT-001",
+    "categoryId": "home-kitchen",
+    "category": "Home & Kitchen",
+    "images": [
+      "/placeholder.svg?height=400&width=400&text=Kitchen+Utensils+Set",
+      "/placeholder.svg?height=400&width=400&text=Kitchen+Utensils+Detail",
+      "/placeholder.svg?height=400&width=400&text=Kitchen+Utensils+Package"
+    ],
+    "description": "Professional-grade stainless steel kitchen utensils set with ergonomic handles. Dishwasher safe and built to last.",
+    "specs": [
+      { "key": "Material", "value": "304 Stainless Steel" },
+      { "key": "Finish", "value": "Mirror Polish" },
+      { "key": "Set Contents", "value": "12-piece set" },
+      { "key": "Handle", "value": "Ergonomic Design" },
+      { "key": "Dishwasher Safe", "value": "Yes" },
+      { "key": "Packaging", "value": "Gift Box" },
+      { "key": "Warranty", "value": "2 years" },
+      { "key": "Certification", "value": "FDA Approved" }
+    ],
+    "moq": 100,
+    "pricingTiers": [
+      { "minQty": 100, "maxQty": 199, "unitPrice": 45 },
+      { "minQty": 200, "maxQty": 499, "unitPrice": 40 },
+      { "minQty": 500, "maxQty": 999, "unitPrice": 35 },
+      { "minQty": 1000, "unitPrice": 30 }
+    ],
+    "sampleAvailable": true,
+    "samplePrice": 55,
+    "inventory": [
+      { "warehouseId": "WH-SH-001", "warehouseName": "Shanghai Main", "qty": 200 },
+      { "warehouseId": "WH-GZ-001", "warehouseName": "Guangzhou Branch", "qty": 150 },
+      { "warehouseId": "WH-SZ-001", "warehouseName": "Shenzhen Hub", "qty": 100 }
+    ],
+    "totalStock": 450,
+    "status": "active",
+    "visibility": "public",
+    "tags": ["kitchen", "utensils", "stainless-steel", "professional", "gift-set"],
+    "certifications": ["FDA", "LFGB", "CE"],
+    "leadTimeDays": 30,
+    "createdAt": "2024-01-15T14:30:00Z",
+    "updatedAt": "2024-01-27T10:15:00Z",
+    "views": 654,
+    "inquiries": 45,
+    "orders": 12
+  },
+  {
+    "id": "PROD-006",
+    "title": "Solar Panel Mounting Brackets - Heavy Duty",
+    "sku": "SPM-BRK-001",
+    "categoryId": "renewable-energy",
+    "category": "Renewable Energy",
+    "images": [
+      "/placeholder.svg?height=400&width=400&text=Solar+Mounting+Brackets",
+      "/placeholder.svg?height=400&width=400&text=Solar+Mounting+Installation",
+      "/placeholder.svg?height=400&width=400&text=Solar+Mounting+Components"
+    ],
+    "description": "Heavy-duty aluminum mounting brackets for solar panels. Weather-resistant and designed for long-term outdoor use.",
+    "specs": [
+      { "key": "Material", "value": "Anodized Aluminum 6005-T5" },
+      { "key": "Panel Compatibility", "value": "Most standard panels" },
+      { "key": "Wind Load", "value": "Up to 150 mph" },
+      { "key": "Snow Load", "value": "Up to 50 psf" },
+      { "key": "Warranty", "value": "25 years" },
+      { "key": "Installation", "value": "Rail-less design" },
+      { "key": "Corrosion Resistance", "value": "Marine grade" },
+      { "key": "Temperature Range", "value": "-40°C to +85°C" }
+    ],
+    "moq": 50,
+    "pricingTiers": [
+      { "minQty": 50, "maxQty": 99, "unitPrice": 125 },
+      { "minQty": 100, "maxQty": 199, "unitPrice": 120 },
+      { "minQty": 200, "maxQty": 499, "unitPrice": 115 },
+      { "minQty": 500, "unitPrice": 110 }
+    ],
+    "sampleAvailable": true,
+    "samplePrice": 150,
+    "inventory": [
+      { "warehouseId": "WH-SH-001", "warehouseName": "Shanghai Main", "qty": 80 },
+      { "warehouseId": "WH-GZ-001", "warehouseName": "Guangzhou Branch", "qty": 60 },
+      { "warehouseId": "WH-SZ-001", "warehouseName": "Shenzhen Hub", "qty": 40 }
+    ],
+    "totalStock": 180,
+    "status": "draft",
+    "visibility": "private",
+    "tags": ["solar", "mounting", "brackets", "renewable-energy", "aluminum"],
+    "certifications": ["UL", "IEC", "TUV"],
+    "leadTimeDays": 45,
+    "createdAt": "2024-01-20T16:00:00Z",
+    "updatedAt": "2024-01-28T13:45:00Z",
+    "views": 234,
+    "inquiries": 18,
+    "orders": 3
+  }
+]

@@ -1,0 +1,102 @@
+[
+  {
+    "id": "1",
+    "subject": "Inquiry about Wireless Headphones Bulk Order",
+    "from": {
+      "name": "Sarah Johnson",
+      "company": "TechCorp Solutions",
+      "email": "sarah.johnson@techcorp.com",
+      "avatar": "/placeholder.svg?height=40&width=40"
+    },
+    "to": {
+      "name": "Adelbaba Supplier",
+      "email": "supplier@adelbaba.com"
+    },
+    "status": "unread",
+    "priority": "high",
+    "category": "inquiry",
+    "createdAt": "2024-08-23T09:30:00Z",
+    "lastReply": "2024-08-23T09:30:00Z",
+    "messages": [
+      {
+        "id": "1-1",
+        "content": "Hello,\n\nI'm interested in placing a bulk order for your Wireless Bluetooth Headphones. We need approximately 500 units for our corporate gifts program.\n\nCould you please provide:\n1. Volume pricing for 500+ units\n2. Customization options (logo printing)\n3. Lead time for delivery to USA\n4. Payment terms\n\nLooking forward to your response.\n\nBest regards,\nSarah Johnson",
+        "sender": "buyer",
+        "timestamp": "2024-08-23T09:30:00Z",
+        "attachments": []
+      }
+    ],
+    "tags": ["bulk-order", "customization", "corporate"]
+  },
+  {
+    "id": "2",
+    "subject": "Payment Terms Discussion - Order #ORD-2024-156",
+    "from": {
+      "name": "Michael Chen",
+      "company": "Global Electronics Ltd",
+      "email": "m.chen@globalelectronics.co.uk",
+      "avatar": "/placeholder.svg?height=40&width=40"
+    },
+    "to": {
+      "name": "Adelbaba Supplier",
+      "email": "supplier@adelbaba.com"
+    },
+    "status": "replied",
+    "priority": "medium",
+    "category": "order",
+    "createdAt": "2024-08-22T14:15:00Z",
+    "lastReply": "2024-08-22T16:45:00Z",
+    "messages": [
+      {
+        "id": "2-1",
+        "content": "Hi,\n\nRegarding our recent order #ORD-2024-156, I wanted to discuss the payment terms. Our finance team is requesting if we can extend the payment period to 45 days instead of the standard 30 days.\n\nWe've been a loyal customer for over a year and would appreciate your consideration.\n\nThanks,\nMichael",
+        "sender": "buyer",
+        "timestamp": "2024-08-22T14:15:00Z",
+        "attachments": []
+      },
+      {
+        "id": "2-2",
+        "content": "Hello Michael,\n\nThank you for reaching out. Given our long-standing relationship and your excellent payment history, we can accommodate the 45-day payment terms for this order.\n\nI'll update the order details and send you the revised invoice.\n\nBest regards,\nAdelbaba Team",
+        "sender": "supplier",
+        "timestamp": "2024-08-22T16:45:00Z",
+        "attachments": []
+      }
+    ],
+    "tags": ["payment-terms", "existing-customer"]
+  },
+  {
+    "id": "3",
+    "subject": "Quality Concern - Smart Fitness Watch",
+    "from": {
+      "name": "Emma Rodriguez",
+      "company": "Innovation Hub",
+      "email": "emma.r@innovationhub.de",
+      "avatar": "/placeholder.svg?height=40&width=40"
+    },
+    "to": {
+      "name": "Adelbaba Supplier",
+      "email": "supplier@adelbaba.com"
+    },
+    "status": "urgent",
+    "priority": "high",
+    "category": "support",
+    "createdAt": "2024-08-21T11:20:00Z",
+    "lastReply": "2024-08-21T11:20:00Z",
+    "messages": [
+      {
+        "id": "3-1",
+        "content": "Dear Adelbaba Team,\n\nWe received our order of Smart Fitness Watches last week, but we've noticed some quality issues with a few units:\n\n- Screen flickering on 3 units\n- Battery not holding charge properly on 2 units\n- Strap material seems different from the sample\n\nWe need to resolve this quickly as we have commitments to our clients. Please advise on the next steps for replacement or refund.\n\nUrgent response needed.\n\nBest regards,\nEmma Rodriguez",
+        "sender": "buyer",
+        "timestamp": "2024-08-21T11:20:00Z",
+        "attachments": [
+          {
+            "name": "quality_issues_photos.zip",
+            "size": "2.4 MB",
+            "type": "application/zip"
+          }
+        ]
+      }
+    ],
+    "tags": ["quality-issue", "urgent", "replacement"]
+  }
+]

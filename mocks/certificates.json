@@ -1,0 +1,62 @@
+[
+  {
+    "id": "1",
+    "name": "ISO 9001:2015 Quality Management",
+    "type": "quality",
+    "issuer": "International Organization for Standardization",
+    "issueDate": "2024-01-15T00:00:00Z",
+    "expiryDate": "2027-01-15T00:00:00Z",
+    "status": "active",
+    "certificateNumber": "ISO-9001-2024-001",
+    "scope": "Design, development, and manufacturing of electronic accessories",
+    "documentUrl": "/certificates/iso-9001-certificate.pdf",
+    "verificationUrl": "https://iso.org/verify/ISO-9001-2024-001",
+    "applicableProducts": ["Electronics", "Consumer Goods"],
+    "description": "This certificate demonstrates our commitment to quality management systems and continuous improvement in our manufacturing processes."
+  },
+  {
+    "id": "2",
+    "name": "CE Marking Compliance",
+    "type": "compliance",
+    "issuer": "European Conformity Assessment",
+    "issueDate": "2024-03-10T00:00:00Z",
+    "expiryDate": "2026-03-10T00:00:00Z",
+    "status": "active",
+    "certificateNumber": "CE-2024-ELC-789",
+    "scope": "Electronic devices and accessories for European market",
+    "documentUrl": "/certificates/ce-marking-certificate.pdf",
+    "verificationUrl": "https://ec.europa.eu/verify/CE-2024-ELC-789",
+    "applicableProducts": ["Wireless Headphones", "Smart Watches", "Power Banks"],
+    "description": "CE marking indicates conformity with health, safety, and environmental protection standards for products sold within the European Economic Area."
+  },
+  {
+    "id": "3",
+    "name": "FCC Equipment Authorization",
+    "type": "compliance",
+    "issuer": "Federal Communications Commission",
+    "issueDate": "2024-02-20T00:00:00Z",
+    "expiryDate": "2026-02-20T00:00:00Z",
+    "status": "active",
+    "certificateNumber": "FCC-ID-2024-WRL456",
+    "scope": "Wireless communication devices",
+    "documentUrl": "/certificates/fcc-authorization.pdf",
+    "verificationUrl": "https://fccid.io/verify/FCC-ID-2024-WRL456",
+    "applicableProducts": ["Wireless Headphones", "Bluetooth Speakers"],
+    "description": "FCC authorization for wireless devices ensuring compliance with electromagnetic compatibility and radio frequency emission standards."
+  },
+  {
+    "id": "4",
+    "name": "RoHS Compliance Certificate",
+    "type": "environmental",
+    "issuer": "SGS Testing Services",
+    "issueDate": "2024-04-05T00:00:00Z",
+    "expiryDate": "2025-04-05T00:00:00Z",
+    "status": "expiring_soon",
+    "certificateNumber": "RoHS-SGS-2024-123",
+    "scope": "Electronic products free from hazardous substances",
+    "documentUrl": "/certificates/rohs-compliance.pdf",
+    "verificationUrl": "https://sgs.com/verify/RoHS-SGS-2024-123",
+    "applicableProducts": ["All Electronic Products"],
+    "description": "Restriction of Hazardous Substances compliance ensuring our products are free from lead, mercury, cadmium, and other harmful materials."
+  }
+]

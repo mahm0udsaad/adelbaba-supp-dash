@@ -1,0 +1,78 @@
+[
+  {
+    "id": "1",
+    "name": "Sarah Johnson",
+    "company": "TechCorp Solutions",
+    "email": "sarah.johnson@techcorp.com",
+    "phone": "+1-555-0123",
+    "country": "USA",
+    "status": "active",
+    "lastContact": "2024-08-20T10:30:00Z",
+    "totalOrders": 23,
+    "totalRevenue": 45600,
+    "tags": ["VIP", "Electronics"],
+    "notes": "Key decision maker for electronics procurement. Prefers bulk orders with extended payment terms.",
+    "interactions": [
+      {
+        "id": "1",
+        "type": "email",
+        "subject": "New Product Inquiry",
+        "date": "2024-08-20T10:30:00Z",
+        "summary": "Inquired about wireless charging solutions for office setup"
+      },
+      {
+        "id": "2",
+        "type": "call",
+        "subject": "Order Follow-up",
+        "date": "2024-08-18T14:15:00Z",
+        "summary": "Discussed delivery timeline for pending order #ORD-2024-156"
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "name": "Michael Chen",
+    "company": "Global Electronics Ltd",
+    "email": "m.chen@globalelectronics.co.uk",
+    "phone": "+44-20-7123-4567",
+    "country": "UK",
+    "status": "active",
+    "lastContact": "2024-08-19T16:45:00Z",
+    "totalOrders": 18,
+    "totalRevenue": 38200,
+    "tags": ["Regular", "Bulk Orders"],
+    "notes": "Reliable customer with consistent monthly orders. Interested in sustainable packaging options.",
+    "interactions": [
+      {
+        "id": "3",
+        "type": "meeting",
+        "subject": "Quarterly Business Review",
+        "date": "2024-08-19T16:45:00Z",
+        "summary": "Reviewed Q2 performance and discussed expansion opportunities"
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "name": "Emma Rodriguez",
+    "company": "Innovation Hub",
+    "email": "emma.r@innovationhub.de",
+    "phone": "+49-30-12345678",
+    "country": "Germany",
+    "status": "prospect",
+    "lastContact": "2024-08-21T09:20:00Z",
+    "totalOrders": 15,
+    "totalRevenue": 29800,
+    "tags": ["New", "High Potential"],
+    "notes": "Startup accelerator looking for tech accessories for their portfolio companies.",
+    "interactions": [
+      {
+        "id": "4",
+        "type": "email",
+        "subject": "Partnership Opportunity",
+        "date": "2024-08-21T09:20:00Z",
+        "summary": "Discussed potential partnership for supplying tech accessories to startups"
+      }
+    ]
+  }
+]

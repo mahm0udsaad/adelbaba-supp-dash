@@ -1,0 +1,66 @@
+[
+  {
+    "id": "revenue",
+    "title": "Revenue Analytics",
+    "data": {
+      "totalRevenue": 125000,
+      "monthlyRevenue": 15000,
+      "revenueGrowth": 12.5,
+      "monthlyData": [
+        { "month": "Jan", "revenue": 8500, "orders": 45 },
+        { "month": "Feb", "revenue": 9200, "orders": 52 },
+        { "month": "Mar", "revenue": 11000, "orders": 58 },
+        { "month": "Apr", "revenue": 12500, "orders": 65 },
+        { "month": "May", "revenue": 13800, "orders": 72 },
+        { "month": "Jun", "revenue": 15000, "orders": 78 }
+      ]
+    }
+  },
+  {
+    "id": "orders",
+    "title": "Order Analytics",
+    "data": {
+      "totalOrders": 370,
+      "monthlyOrders": 78,
+      "orderGrowth": 8.3,
+      "statusBreakdown": [
+        { "status": "Completed", "count": 245, "percentage": 66.2 },
+        { "status": "Processing", "count": 85, "percentage": 23.0 },
+        { "status": "Pending", "count": 25, "percentage": 6.8 },
+        { "status": "Cancelled", "count": 15, "percentage": 4.0 }
+      ]
+    }
+  },
+  {
+    "id": "products",
+    "title": "Product Performance",
+    "data": {
+      "totalProducts": 156,
+      "activeProducts": 142,
+      "topProducts": [
+        { "id": "1", "name": "Wireless Bluetooth Headphones", "sales": 245, "revenue": 12250 },
+        { "id": "2", "name": "Smart Fitness Watch", "sales": 189, "revenue": 18900 },
+        { "id": "3", "name": "Portable Power Bank", "sales": 167, "revenue": 8350 },
+        { "id": "4", "name": "USB-C Cable Set", "sales": 156, "revenue": 3120 },
+        { "id": "5", "name": "Wireless Charging Pad", "sales": 134, "revenue": 6700 }
+      ]
+    }
+  },
+  {
+    "id": "buyers",
+    "title": "Buyer Analytics",
+    "data": {
+      "totalBuyers": 89,
+      "activeBuyers": 67,
+      "newBuyers": 12,
+      "buyerGrowth": 15.2,
+      "topBuyers": [
+        { "id": "1", "name": "TechCorp Solutions", "orders": 23, "revenue": 45600, "country": "USA" },
+        { "id": "2", "name": "Global Electronics Ltd", "orders": 18, "revenue": 38200, "country": "UK" },
+        { "id": "3", "name": "Innovation Hub", "orders": 15, "revenue": 29800, "country": "Germany" },
+        { "id": "4", "name": "Smart Devices Inc", "orders": 12, "revenue": 24500, "country": "Canada" },
+        { "id": "5", "name": "Future Tech", "orders": 10, "revenue": 19200, "country": "Australia" }
+      ]
+    }
+  }
+]

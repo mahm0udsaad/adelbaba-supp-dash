@@ -1,0 +1,254 @@
+[
+  {
+    "productId": "PROD-001",
+    "productName": "Wireless Bluetooth Headphones - Premium Quality",
+    "sku": "WBH-2024-001",
+    "warehouses": [
+      {
+        "warehouseId": "WH-001",
+        "warehouseName": "Dubai Main Warehouse",
+        "location": "Dubai, UAE",
+        "quantity": 450,
+        "reservedQty": 50,
+        "availableQty": 400,
+        "reorderLevel": 100,
+        "lastUpdated": "2024-01-28T10:30:00Z"
+      },
+      {
+        "warehouseId": "WH-002",
+        "warehouseName": "Shanghai Distribution Center",
+        "location": "Shanghai, China",
+        "quantity": 1250,
+        "reservedQty": 150,
+        "availableQty": 1100,
+        "reorderLevel": 200,
+        "lastUpdated": "2024-01-28T14:20:00Z"
+      },
+      {
+        "warehouseId": "WH-003",
+        "warehouseName": "Istanbul Regional Hub",
+        "location": "Istanbul, Turkey",
+        "quantity": 320,
+        "reservedQty": 20,
+        "availableQty": 300,
+        "reorderLevel": 80,
+        "lastUpdated": "2024-01-27T16:45:00Z"
+      }
+    ],
+    "totalStock": 2020,
+    "totalReserved": 220,
+    "totalAvailable": 1800,
+    "lowStockAlert": false,
+    "lastStockUpdate": "2024-01-28T14:20:00Z"
+  },
+  {
+    "productId": "PROD-002",
+    "productName": "USB-C Charging Cables - Fast Charging",
+    "sku": "USB-C-001",
+    "warehouses": [
+      {
+        "warehouseId": "WH-001",
+        "warehouseName": "Dubai Main Warehouse",
+        "location": "Dubai, UAE",
+        "quantity": 2800,
+        "reservedQty": 300,
+        "availableQty": 2500,
+        "reorderLevel": 500,
+        "lastUpdated": "2024-01-28T09:15:00Z"
+      },
+      {
+        "warehouseId": "WH-002",
+        "warehouseName": "Shanghai Distribution Center",
+        "location": "Shanghai, China",
+        "quantity": 5000,
+        "reservedQty": 500,
+        "availableQty": 4500,
+        "reorderLevel": 1000,
+        "lastUpdated": "2024-01-28T11:30:00Z"
+      },
+      {
+        "warehouseId": "WH-003",
+        "warehouseName": "Istanbul Regional Hub",
+        "location": "Istanbul, Turkey",
+        "quantity": 1200,
+        "reservedQty": 100,
+        "availableQty": 1100,
+        "reorderLevel": 300,
+        "lastUpdated": "2024-01-27T13:20:00Z"
+      }
+    ],
+    "totalStock": 9000,
+    "totalReserved": 900,
+    "totalAvailable": 8100,
+    "lowStockAlert": false,
+    "lastStockUpdate": "2024-01-28T11:30:00Z"
+  },
+  {
+    "productId": "PROD-003",
+    "productName": "Cotton T-Shirts - Premium Combed Cotton",
+    "sku": "CT-MIX-001",
+    "warehouses": [
+      {
+        "warehouseId": "WH-001",
+        "warehouseName": "Dubai Main Warehouse",
+        "location": "Dubai, UAE",
+        "quantity": 600,
+        "reservedQty": 100,
+        "availableQty": 500,
+        "reorderLevel": 200,
+        "lastUpdated": "2024-01-27T15:45:00Z"
+      },
+      {
+        "warehouseId": "WH-002",
+        "warehouseName": "Shanghai Distribution Center",
+        "location": "Shanghai, China",
+        "quantity": 1200,
+        "reservedQty": 200,
+        "availableQty": 1000,
+        "reorderLevel": 300,
+        "lastUpdated": "2024-01-28T08:30:00Z"
+      },
+      {
+        "warehouseId": "WH-003",
+        "warehouseName": "Istanbul Regional Hub",
+        "location": "Istanbul, Turkey",
+        "quantity": 800,
+        "reservedQty": 50,
+        "availableQty": 750,
+        "reorderLevel": 150,
+        "lastUpdated": "2024-01-27T12:15:00Z"
+      }
+    ],
+    "totalStock": 2600,
+    "totalReserved": 350,
+    "totalAvailable": 2250,
+    "lowStockAlert": false,
+    "lastStockUpdate": "2024-01-28T08:30:00Z"
+  },
+  {
+    "productId": "PROD-004",
+    "productName": "Bluetooth Portable Speakers - Waterproof",
+    "sku": "BT-SPK-001",
+    "warehouses": [
+      {
+        "warehouseId": "WH-001",
+        "warehouseName": "Dubai Main Warehouse",
+        "location": "Dubai, UAE",
+        "quantity": 180,
+        "reservedQty": 30,
+        "availableQty": 150,
+        "reorderLevel": 50,
+        "lastUpdated": "2024-01-28T12:00:00Z"
+      },
+      {
+        "warehouseId": "WH-002",
+        "warehouseName": "Shanghai Distribution Center",
+        "location": "Shanghai, China",
+        "quantity": 450,
+        "reservedQty": 80,
+        "availableQty": 370,
+        "reorderLevel": 100,
+        "lastUpdated": "2024-01-27T16:30:00Z"
+      },
+      {
+        "warehouseId": "WH-003",
+        "warehouseName": "Istanbul Regional Hub",
+        "location": "Istanbul, Turkey",
+        "quantity": 220,
+        "reservedQty": 20,
+        "availableQty": 200,
+        "reorderLevel": 60,
+        "lastUpdated": "2024-01-28T10:45:00Z"
+      }
+    ],
+    "totalStock": 850,
+    "totalReserved": 130,
+    "totalAvailable": 720,
+    "lowStockAlert": false,
+    "lastStockUpdate": "2024-01-28T12:00:00Z"
+  },
+  {
+    "productId": "PROD-005",
+    "productName": "Stainless Steel Kitchen Utensils Set",
+    "sku": "SS-KIT-001",
+    "warehouses": [
+      {
+        "warehouseId": "WH-001",
+        "warehouseName": "Dubai Main Warehouse",
+        "location": "Dubai, UAE",
+        "quantity": 120,
+        "reservedQty": 20,
+        "availableQty": 100,
+        "reorderLevel": 50,
+        "lastUpdated": "2024-01-27T14:20:00Z"
+      },
+      {
+        "warehouseId": "WH-002",
+        "warehouseName": "Shanghai Distribution Center",
+        "location": "Shanghai, China",
+        "quantity": 200,
+        "reservedQty": 50,
+        "availableQty": 150,
+        "reorderLevel": 80,
+        "lastUpdated": "2024-01-28T09:45:00Z"
+      },
+      {
+        "warehouseId": "WH-003",
+        "warehouseName": "Istanbul Regional Hub",
+        "location": "Istanbul, Turkey",
+        "quantity": 130,
+        "reservedQty": 15,
+        "availableQty": 115,
+        "reorderLevel": 40,
+        "lastUpdated": "2024-01-27T11:30:00Z"
+      }
+    ],
+    "totalStock": 450,
+    "totalReserved": 85,
+    "totalAvailable": 365,
+    "lowStockAlert": false,
+    "lastStockUpdate": "2024-01-28T09:45:00Z"
+  },
+  {
+    "productId": "PROD-006",
+    "productName": "Solar Panel Mounting Brackets - Heavy Duty",
+    "sku": "SPM-BRK-001",
+    "warehouses": [
+      {
+        "warehouseId": "WH-001",
+        "warehouseName": "Dubai Main Warehouse",
+        "location": "Dubai, UAE",
+        "quantity": 45,
+        "reservedQty": 10,
+        "availableQty": 35,
+        "reorderLevel": 20,
+        "lastUpdated": "2024-01-28T13:15:00Z"
+      },
+      {
+        "warehouseId": "WH-002",
+        "warehouseName": "Shanghai Distribution Center",
+        "location": "Shanghai, China",
+        "quantity": 80,
+        "reservedQty": 15,
+        "availableQty": 65,
+        "reorderLevel": 30,
+        "lastUpdated": "2024-01-27T17:00:00Z"
+      },
+      {
+        "warehouseId": "WH-003",
+        "warehouseName": "Istanbul Regional Hub",
+        "location": "Istanbul, Turkey",
+        "quantity": 55,
+        "reservedQty": 5,
+        "availableQty": 50,
+        "reorderLevel": 25,
+        "lastUpdated": "2024-01-28T08:45:00Z"
+      }
+    ],
+    "totalStock": 180,
+    "totalReserved": 30,
+    "totalAvailable": 150,
+    "lowStockAlert": true,
+    "lastStockUpdate": "2024-01-28T13:15:00Z"
+  }
+]

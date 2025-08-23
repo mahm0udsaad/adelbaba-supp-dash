@@ -1,0 +1,56 @@
+[
+  {
+    "id": "profit-calculator",
+    "name": "Profit Calculator",
+    "description": "Calculate profit margins and pricing for your products",
+    "category": "pricing",
+    "icon": "calculator",
+    "url": "/dashboard/tools/profit-calculator",
+    "popular": true
+  },
+  {
+    "id": "shipping-calculator",
+    "name": "Shipping Calculator",
+    "description": "Estimate shipping costs to different countries",
+    "category": "logistics",
+    "icon": "truck",
+    "url": "/dashboard/tools/shipping-calculator",
+    "popular": true
+  },
+  {
+    "id": "currency-converter",
+    "name": "Currency Converter",
+    "description": "Convert between different currencies with live rates",
+    "category": "finance",
+    "icon": "dollar-sign",
+    "url": "/dashboard/tools/currency-converter",
+    "popular": false
+  },
+  {
+    "id": "moq-optimizer",
+    "name": "MOQ Optimizer",
+    "description": "Optimize minimum order quantities for better profitability",
+    "category": "pricing",
+    "icon": "trending-up",
+    "url": "/dashboard/tools/moq-optimizer",
+    "popular": false
+  },
+  {
+    "id": "market-research",
+    "name": "Market Research Tool",
+    "description": "Research market trends and competitor pricing",
+    "category": "research",
+    "icon": "search",
+    "url": "/dashboard/tools/market-research",
+    "popular": true
+  },
+  {
+    "id": "invoice-generator",
+    "name": "Invoice Generator",
+    "description": "Generate professional invoices for your orders",
+    "category": "finance",
+    "icon": "file-text",
+    "url": "/dashboard/tools/invoice-generator",
+    "popular": false
+  }
+]

@@ -1,0 +1,40 @@
+[
+  {
+    "id": "supplier_001",
+    "email": "supplier@adelbaba.com",
+    "password": "password123",
+    "name": "Ahmed Al-Masri",
+    "nameAr": "أحمد المصري",
+    "company": "Al-Masri Trading Co.",
+    "companyAr": "شركة المصري للتجارة",
+    "membershipTier": "gold",
+    "avatar": "/placeholder.svg?height=40&width=40&text=AM",
+    "phone": "+971-50-123-4567",
+    "country": "UAE",
+    "city": "Dubai",
+    "joinedAt": "2022-03-15T10:00:00Z",
+    "lastLoginAt": "2024-08-23T08:30:00Z",
+    "isVerified": true,
+    "businessLicense": "DED-123456789",
+    "taxId": "TAX-987654321"
+  },
+  {
+    "id": "supplier_002",
+    "email": "demo@adelbaba.com",
+    "password": "demo123",
+    "name": "Sarah Johnson",
+    "nameAr": "سارة جونسون",
+    "company": "Global Electronics Ltd.",
+    "companyAr": "شركة الإلكترونيات العالمية المحدودة",
+    "membershipTier": "silver",
+    "avatar": "/placeholder.svg?height=40&width=40&text=SJ",
+    "phone": "+1-555-123-4567",
+    "country": "USA",
+    "city": "New York",
+    "joinedAt": "2023-01-20T14:30:00Z",
+    "lastLoginAt": "2024-08-22T16:45:00Z",
+    "isVerified": true,
+    "businessLicense": "NY-BL-789012345",
+    "taxId": "EIN-123456789"
+  }
+]

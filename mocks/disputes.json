@@ -1,0 +1,44 @@
+[
+  {
+    "id": "DISP-001",
+    "orderId": "ORD-2024-001",
+    "type": "quality_issue",
+    "status": "open",
+    "priority": "high",
+    "title": "Product Quality Does Not Match Description",
+    "titleAr": "جودة المنتج لا تطابق الوصف",
+    "description": "The received products do not match the quality specifications mentioned in the order. Several units have manufacturing defects.",
+    "descriptionAr": "المنتجات المستلمة لا تطابق مواصفات الجودة المذكورة في الطلب. عدة وحدات بها عيوب تصنيع.",
+    "buyerName": "Tech Solutions Inc.",
+    "buyerEmail": "procurement@techsolutions.com",
+    "supplierResponse": null,
+    "evidence": [
+      {
+        "type": "image",
+        "url": "/placeholder.svg?height=300&width=400&text=Defective+Product",
+        "description": "Photo showing manufacturing defect"
+      }
+    ],
+    "createdAt": "2024-08-20T10:30:00Z",
+    "updatedAt": "2024-08-20T10:30:00Z",
+    "dueDate": "2024-08-27T10:30:00Z"
+  },
+  {
+    "id": "DISP-002",
+    "orderId": "ORD-2024-003",
+    "type": "shipping_delay",
+    "status": "resolved",
+    "priority": "medium",
+    "title": "Delayed Shipment",
+    "titleAr": "تأخير في الشحن",
+    "description": "Order was shipped 5 days later than the agreed delivery date.",
+    "descriptionAr": "تم شحن الطلب بعد 5 أيام من تاريخ التسليم المتفق عليه.",
+    "buyerName": "Global Imports LLC",
+    "buyerEmail": "orders@globalimports.com",
+    "supplierResponse": "We apologize for the delay. It was due to unexpected customs clearance issues. We have provided a 5% discount as compensation.",
+    "resolution": "5% discount applied to order total",
+    "createdAt": "2024-08-15T14:20:00Z",
+    "updatedAt": "2024-08-18T09:15:00Z",
+    "resolvedAt": "2024-08-18T09:15:00Z"
+  }
+]

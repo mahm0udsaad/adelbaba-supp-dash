@@ -1,0 +1,171 @@
+{
+  "currentPlan": {
+    "name": "Gold Supplier",
+    "nameAr": "مورد ذهبي",
+    "level": "gold",
+    "badge": "⭐",
+    "color": "text-yellow-600",
+    "features": [
+      "Unlimited product listings",
+      "Priority customer support",
+      "Advanced analytics",
+      "Featured placement",
+      "Custom branding"
+    ],
+    "featuresAr": ["قوائم منتجات غير محدودة", "دعم عملاء أولوية", "تحليلات متقدمة", "وضع مميز", "علامة تجارية مخصصة"],
+    "validUntil": "2025-12-31",
+    "progress": 75
+  },
+  "plans": [
+    {
+      "id": "basic",
+      "name": "Basic Supplier",
+      "nameAr": "مورد أساسي",
+      "level": "basic",
+      "price": 0,
+      "currency": "USD",
+      "period": "month",
+      "periodAr": "شهر",
+      "badge": "🥉",
+      "color": "text-gray-600",
+      "popular": false,
+      "features": ["Up to 50 product listings", "Basic customer support", "Standard analytics", "Basic profile"],
+      "featuresAr": ["حتى 50 قائمة منتج", "دعم عملاء أساسي", "تحليلات قياسية", "ملف شخصي أساسي"],
+      "benefits": ["Free to start", "Basic seller tools", "Standard visibility"],
+      "benefitsAr": ["مجاني للبدء", "أدوات بائع أساسية", "رؤية قياسية"]
+    },
+    {
+      "id": "silver",
+      "name": "Silver Supplier",
+      "nameAr": "مورد فضي",
+      "level": "silver",
+      "price": 99,
+      "currency": "USD",
+      "period": "month",
+      "periodAr": "شهر",
+      "badge": "🥈",
+      "color": "text-gray-500",
+      "popular": false,
+      "features": [
+        "Up to 200 product listings",
+        "Priority customer support",
+        "Advanced analytics",
+        "Enhanced profile",
+        "Marketing tools"
+      ],
+      "featuresAr": ["حتى 200 قائمة منتج", "دعم عملاء أولوية", "تحليلات متقدمة", "ملف شخصي محسن", "أدوات تسويق"],
+      "benefits": ["Higher search ranking", "Marketing support", "Advanced tools"],
+      "benefitsAr": ["ترتيب بحث أعلى", "دعم تسويقي", "أدوات متقدمة"]
+    },
+    {
+      "id": "gold",
+      "name": "Gold Supplier",
+      "nameAr": "مورد ذهبي",
+      "level": "gold",
+      "price": 199,
+      "currency": "USD",
+      "period": "month",
+      "periodAr": "شهر",
+      "badge": "⭐",
+      "color": "text-yellow-600",
+      "popular": true,
+      "features": [
+        "Unlimited product listings",
+        "Priority customer support",
+        "Advanced analytics",
+        "Featured placement",
+        "Custom branding",
+        "API access"
+      ],
+      "featuresAr": [
+        "قوائم منتجات غير محدودة",
+        "دعم عملاء أولوية",
+        "تحليلات متقدمة",
+        "وضع مميز",
+        "علامة تجارية مخصصة",
+        "وصول API"
+      ],
+      "benefits": ["Premium visibility", "Dedicated account manager", "Custom solutions"],
+      "benefitsAr": ["رؤية مميزة", "مدير حساب مخصص", "حلول مخصصة"]
+    },
+    {
+      "id": "platinum",
+      "name": "Platinum Supplier",
+      "nameAr": "مورد بلاتيني",
+      "level": "platinum",
+      "price": 399,
+      "currency": "USD",
+      "period": "month",
+      "periodAr": "شهر",
+      "badge": "💎",
+      "color": "text-purple-600",
+      "popular": false,
+      "features": [
+        "Everything in Gold",
+        "White-label solutions",
+        "Custom integrations",
+        "Dedicated support team",
+        "Advanced reporting",
+        "Priority listing"
+      ],
+      "featuresAr": [
+        "كل شيء في الذهبي",
+        "حلول العلامة البيضاء",
+        "تكاملات مخصصة",
+        "فريق دعم مخصص",
+        "تقارير متقدمة",
+        "قائمة أولوية"
+      ],
+      "benefits": ["Maximum exposure", "Enterprise features", "Custom development"],
+      "benefitsAr": ["أقصى تعرض", "ميزات المؤسسة", "تطوير مخصص"]
+    }
+  ],
+  "benefits": {
+    "totalSales": 125000,
+    "totalOrders": 1250,
+    "responseRate": 98,
+    "customerSatisfaction": 4.8
+  },
+  "achievements": [
+    {
+      "id": "first_sale",
+      "title": "First Sale",
+      "titleAr": "أول بيعة",
+      "description": "Complete your first successful order",
+      "descriptionAr": "أكمل أول طلب ناجح",
+      "icon": "🎯",
+      "earned": true,
+      "progress": 100
+    },
+    {
+      "id": "hundred_orders",
+      "title": "Century Seller",
+      "titleAr": "بائع المئة",
+      "description": "Complete 100 orders",
+      "descriptionAr": "أكمل 100 طلب",
+      "icon": "💯",
+      "earned": true,
+      "progress": 100
+    },
+    {
+      "id": "top_rated",
+      "title": "Top Rated Supplier",
+      "titleAr": "مورد عالي التقييم",
+      "description": "Maintain 4.5+ rating for 6 months",
+      "descriptionAr": "حافظ على تقييم 4.5+ لمدة 6 أشهر",
+      "icon": "⭐",
+      "earned": true,
+      "progress": 100
+    },
+    {
+      "id": "fast_responder",
+      "title": "Lightning Responder",
+      "titleAr": "مستجيب سريع",
+      "description": "Maintain 95%+ response rate",
+      "descriptionAr": "حافظ على معدل استجابة 95%+",
+      "icon": "⚡",
+      "earned": false,
+      "progress": 85
+    }
+  ]
+}

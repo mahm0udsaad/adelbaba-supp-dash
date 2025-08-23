@@ -1,0 +1,41 @@
+[
+  {
+    "id": "WH-001",
+    "name": "Dubai Main Warehouse",
+    "nameAr": "المستودع الرئيسي في دبي",
+    "address": "Jebel Ali Free Zone, Dubai, UAE",
+    "addressAr": "منطقة جبل علي الحرة، دبي، الإمارات العربية المتحدة",
+    "manager": "Hassan Al-Rashid",
+    "phone": "+971-4-123-4567",
+    "email": "dubai@adelbaba.com",
+    "capacity": 10000,
+    "currentUtilization": 7500,
+    "status": "active"
+  },
+  {
+    "id": "WH-002",
+    "name": "Shanghai Distribution Center",
+    "nameAr": "مركز التوزيع في شنغهاي",
+    "address": "Pudong New Area, Shanghai, China",
+    "addressAr": "منطقة بودونغ الجديدة، شنغهاي، الصين",
+    "manager": "Li Wei",
+    "phone": "+86-21-123-4567",
+    "email": "shanghai@adelbaba.com",
+    "capacity": 15000,
+    "currentUtilization": 12000,
+    "status": "active"
+  },
+  {
+    "id": "WH-003",
+    "name": "Istanbul Regional Hub",
+    "nameAr": "المركز الإقليمي في اسطنبول",
+    "address": "Beylikdüzü, Istanbul, Turkey",
+    "addressAr": "بيليك دوزو، اسطنبول، تركيا",
+    "manager": "Mehmet Özkan",
+    "phone": "+90-212-123-4567",
+    "email": "istanbul@adelbaba.com",
+    "capacity": 8000,
+    "currentUtilization": 5200,
+    "status": "active"
+  }
+]
