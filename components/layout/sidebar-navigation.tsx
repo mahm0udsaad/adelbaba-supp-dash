@@ -19,17 +19,17 @@ import {
 } from "lucide-react"
 
 const sidebarItems = [
-  { icon: LayoutDashboard, key: "dashboard" as const, href: "/" },
-  { icon: FileText, key: "rfqs" as const, href: "/rfq" },
-  { icon: ShoppingCart, key: "orders" as const, href: "/orders" },
-  { icon: Package, key: "products" as const, href: "/products" },
-  { icon: Crown, key: "membership" as const, href: "/membership" },
-  { icon: BarChart3, key: "analytics" as const, href: "/analytics" },
-  { icon: Users, key: "crm" as const, href: "/crm" },
-  { icon: Megaphone, key: "ads" as const, href: "/ads" },
-  { icon: Award, key: "certificates" as const, href: "/certificates" },
-  { icon: MessageSquare, key: "inbox" as const, href: "/inbox" },
-  { icon: Settings, key: "tools" as const, href: "/tools" },
+  { icon: LayoutDashboard, key: "dashboard" as const, href: "/dashboard" },
+  { icon: FileText, key: "rfqs" as const, href: "/dashboard/rfq" },
+  { icon: ShoppingCart, key: "orders" as const, href: "/dashboard/orders" },
+  { icon: Package, key: "products" as const, href: "/dashboard/products" },
+  { icon: Crown, key: "membership" as const, href: "/dashboard/membership" },
+  { icon: BarChart3, key: "analytics" as const, href: "/dashboard/analytics" },
+  { icon: Users, key: "crm" as const, href: "/dashboard/crm" },
+  { icon: Megaphone, key: "ads" as const, href: "/dashboard/ads" },
+  { icon: Award, key: "certificates" as const, href: "/dashboard/certificates" },
+  { icon: MessageSquare, key: "inbox" as const, href: "/dashboard/inbox" },
+  { icon: Settings, key: "tools" as const, href: "/dashboard/tools" },
 ]
 
 interface SidebarNavigationProps {

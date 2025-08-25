@@ -15,9 +15,9 @@ export function SidebarHeader({ sidebarOpen, setSidebarOpen, toggleLanguage }: S
 
   return (
     <div className="flex items-center justify-between p-6 border-b border-sidebar-border">
-      <div className="flex items-center gap-4 flex-1">
+      <div className="flex items-center gap-2 flex-1">
         {/* Logo Container */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-sm border border-primary/20">
             <img
               src="/logo-black.webp"
@@ -25,13 +25,12 @@ export function SidebarHeader({ sidebarOpen, setSidebarOpen, toggleLanguage }: S
               className="w-8 h-8 object-contain filter brightness-0 invert"
             />
           </div>
-          <Receipt className="h-5 w-5 text-primary/70" />
         </div>
 
         {/* Brand Name */}
         <div className="flex-1">
           <h1 className="text-xl font-bold text-foreground tracking-tight">Adelbaba</h1>
-          <p className="text-xs text-muted-foreground">Supplier Dashboard</p>
+          <p className="text-[10px] text-muted-foreground">Supplier Dashboard</p>
         </div>
 
         {/* Action Icons */}

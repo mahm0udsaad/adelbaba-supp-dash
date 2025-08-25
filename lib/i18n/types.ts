@@ -29,6 +29,10 @@ export interface TranslationKeys {
   loading: string
   error: string
   success: string
+  export: string
+  category: string
+  download: string
+  verify: string
 
   // Orders
   totalOrders: string
@@ -54,6 +58,13 @@ export interface TranslationKeys {
   held: string
   released: string
   refunded: string
+  draft: string
+  archived: string
+  paused: string
+  completed: string
+  unread: string
+  replied: string
+  urgent: string
 
   // User menu
   profile: string
@@ -65,4 +76,199 @@ export interface TranslationKeys {
   item: string
   items: string
   moreItems: string
+
+  // CRM
+  noContactsFound: string
+  startByAddingContacts: string
+  addContact: string
+  addNewContact: string
+  searchContacts: string
+  crmSubtitle: string
+  name: string
+  company: string
+  email: string
+  phone: string
+  country: string
+  status: string
+  tags: string
+  notes: string
+  commaSeparated: string
+  moreFilters: string
+  allStatuses: string
+  active: string
+  prospect: string
+  inactive: string
+  contactCreated: string
+  contactCreatedDesc: string
+  failedToLoadContacts: string
+  failedToCreateContact: string
+
+  // Ads
+  adsHeader: string
+  adsSubtitle: string
+  noAdsFound: string
+  startByCreatingAd: string
+  createAd: string
+  createNewAdCampaign: string
+  campaignTitle: string
+  product: string
+  selectProduct: string
+  budget: string
+  budgetUsed: string
+  startDate: string
+  endDate: string
+  targetCountries: string
+  targetKeywords: string
+  egCountries: string
+  egKeywords: string
+  createCampaign: string
+  adCreated: string
+  adCreatedDesc: string
+  failedToCreateAd: string
+  impressions: string
+  clicks: string
+  conversions: string
+  details: string
+
+  // Dashboard Root
+  dashboardHeader: string
+  dashboardOverview: string
+  newRFQs: string
+  activeOrdersHeader: string
+  monthlyRevenue: string
+  recentRFQs: string
+  rfqsNeedAttention: string
+  noRecentRFQs: string
+  unit: string
+  open: string
+  quoted: string
+  viewAllRFQs: string
+  recentOrders: string
+  latestOrdersStatus: string
+  noRecentOrders: string
+  viewAllOrders: string
+  quickActions: string
+  mostUsedActions: string
+  addNewProduct: string
+  checkMessages: string
+  viewAnalytics: string
+  expired: string
+  expiresToday: string
+  expiresTomorrow: string
+  expiresInDays: string
+
+  // Inbox
+  inboxHeader: string
+  manageInbox: string
+  searchMessages: string
+  noMessagesFound: string
+  noMessagesMatch: string
+  replySent: string
+  replySentDesc: string
+  failedToSendReply: string
+  failedToLoadMessages: string
+  writeReply: string
+  attachFile: string
+  attachments: string
+  inquiry: string
+  orderLower: string
+  support: string
+  general: string
+
+  // Tools
+  businessTools: string
+  toolsSubtitle: string
+  pricing: string
+  logistics: string
+  finance: string
+  research: string
+  marketing: string
+  communication: string
+  popularTools: string
+  popular: string
+  useTool: string
+  noToolsFound: string
+  tryChangingFilters: string
+
+  // Certificates
+  certificatesHeader: string
+  manageCertificates: string
+  addCertificate: string
+  addNewCertificate: string
+  certificateName: string
+  type: string
+  issuer: string
+  issueDate: string
+  expiryDate: string
+  certificateNumber: string
+  scope: string
+  verificationUrl: string
+  applicableProductsLabel: string
+  description: string
+  allTypes: string
+  quality: string
+  compliance: string
+  environmental: string
+  expiringSoon: string
+  noCertificatesFound: string
+  startByAddingCertificates: string
+  certificateAdded: string
+  certificateAddedDesc: string
+  failedToAddCertificate: string
+
+  // Tools errors
+  failedToLoadTools: string
+
+  // Products
+  totalProducts: string
+  productsHeader: string
+  manageCatalog: string
+  addProduct: string
+  noProductsFound: string
+  tryAdjustingSearchOrAdd: string
+  searchAndFilter: string
+  searchProducts: string
+  allCategories: string
+  electronics: string
+  textiles: string
+  homeKitchen: string
+  renewableEnergy: string
+  priceFrom: string
+  moq: string
+  stock: string
+  views: string
+  inquiries: string
+  ordersLower: string
+  public: string
+  private: string
+  totalViews: string
+  lowStock: string
+
+  // Analytics
+  revenue: string
+  count: string
+  percentage: string
+  analyticsHeader: string
+  trackPerformance: string
+  totalRevenue: string
+  fromLastMonth: string
+  totalOrdersHeader: string
+  activeProducts: string
+  outOf: string
+  productsLower: string
+  activeBuyers: string
+  newThisMonth: string
+  month1: string
+  months3: string
+  months6: string
+  year1: string
+  revenueTrend: string
+  revenueVsOrders: string
+  topPerformingProducts: string
+  topBuyers: string
+  orderStatus: string
+  orderStatusDetails: string
+  buyers: string
+  sales: string
+  failedToLoadAnalyticsData: string
 }
