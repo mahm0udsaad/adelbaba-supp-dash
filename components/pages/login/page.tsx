@@ -16,10 +16,22 @@ export default function LoginPage() {
   const [socialLoading, setSocialLoading] = useState<null | "google" | "facebook">(null)
   const { socialLogin } = useAuth()
 
-  const googleClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID as string | undefined
-  const facebookAppId = (import.meta as any).env?.VITE_FACEBOOK_APP_ID as string | undefined
+  const facebookAppId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID as string | undefined
 
-  // Load Google and Facebook SDKs if env keys are present
+  // If redirected back from server callback with a Google token in query, exchange it
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const url = new URL(window.location.href)
+    const googleToken = url.searchParams.get("g_token")
+    if (googleToken) {
+      setSocialLoading("google")
+      exchangeSocialToken("google", googleToken)
+      url.searchParams.delete("g_token")
+      window.history.replaceState({}, "", url.toString())
+    }
+  }, [])
+
+  // Load Facebook SDK if env key is present (Google handled server-side)
   useEffect(() => {
     const loadScript = (src: string, id: string) =>
       new Promise<void>((resolve, reject) => {
@@ -34,9 +46,7 @@ export default function LoginPage() {
       })
 
     const tasks: Promise<void>[] = []
-    if (googleClientId) {
-      tasks.push(loadScript("https://accounts.google.com/gsi/client", "google-gsi"))
-    }
+    // Google handled server-side; no client SDK required
     if (facebookAppId) {
       // Facebook SDK requires a root element
       if (!document.getElementById("fb-root")) {
@@ -68,7 +78,7 @@ export default function LoginPage() {
     if (tasks.length) {
       Promise.allSettled(tasks).catch(() => {})
     }
-  }, [googleClientId, facebookAppId])
+  }, [facebookAppId])
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
@@ -102,36 +112,13 @@ export default function LoginPage() {
   }
 
   const handleGoogleLogin = async () => {
-    if (!googleClientId) {
-      console.error("Missing VITE_GOOGLE_CLIENT_ID")
-      return
-    }
     setSocialLoading("google")
-    try {
-      const google = (window as any).google
-      if (!google?.accounts?.oauth2) throw new Error("Google SDK not loaded")
-      const client = google.accounts.oauth2.initTokenClient({
-        client_id: googleClientId,
-        scope: "openid email profile",
-        callback: (tokenResponse: any) => {
-          const accessToken = tokenResponse?.access_token
-          if (accessToken) {
-            exchangeSocialToken("google", accessToken)
-          } else {
-            setSocialLoading(null)
-          }
-        },
-      })
-      client.requestAccessToken()
-    } catch (e) {
-      console.error(e)
-      setSocialLoading(null)
-    }
+    window.location.assign("/api/auth/google/start")
   }
 
   const handleFacebookLogin = async () => {
     if (!facebookAppId) {
-      console.error("Missing VITE_FACEBOOK_APP_ID")
+      console.error("Missing NEXT_PUBLIC_FACEBOOK_APP_ID")
       return
     }
     setSocialLoading("facebook")

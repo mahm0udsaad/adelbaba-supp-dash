@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from "axios"
 
 // Centralized Axios client used across the app
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "/",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "/",
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
@@ -32,5 +32,4 @@ apiClient.interceptors.response.use(
 )
 
 export default apiClient
-
 

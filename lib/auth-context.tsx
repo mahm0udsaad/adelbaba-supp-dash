@@ -103,10 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const socialLogin = useCallback(async (provider: "google" | "facebook", token: string) => {
     setIsLoading(true)
     try {
-      const res = await apiClient.post(
-        "https://test.hgallerycandles.com/api/v1/login/social",
-        { provider, token }
-      )
+      const res = await apiClient.post("/api/v1/login/social", { provider, token })
       const data = res.data as any
       const apiToken: string | undefined = data?.token
       const apiUser: AuthUser | undefined = data?.user

@@ -1,15 +1,17 @@
 "use client"
 
-import { useState } from "react"
-import { useI18n, I18nProvider } from "@/lib/i18n/context"
+import type { ReactNode } from "react"
+import { I18nProvider } from "@/lib/i18n/context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { MobileMenuButton } from "@/components/layout/mobile-menu-button"
 import { SidebarOverlay } from "@/components/layout/sidebar-overlay"
-import "@/styles/globals.css"
+import { useI18n } from "@/lib/i18n/context"
+import { useState } from "react"
+import { AuthGuard } from "@/components/auth-guard"
 
-function DashboardLayoutContent({ children }: { children?: React.ReactNode }) {
+function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { language, setLanguage, isArabic } = useI18n()
+  const { isArabic, language, setLanguage } = useI18n()
 
   const toggleLanguage = () => setLanguage(language === "en" ? "ar" : "en")
   const closeSidebar = () => setSidebarOpen(false)
@@ -24,10 +26,12 @@ function DashboardLayoutContent({ children }: { children?: React.ReactNode }) {
   )
 }
 
-export default function DashboardLayout({ children }: { children?: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <I18nProvider>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      <AuthGuard>
+        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      </AuthGuard>
     </I18nProvider>
   )
 }
