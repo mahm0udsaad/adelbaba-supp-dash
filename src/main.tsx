@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import "@/styles/globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { MockDataProvider } from "@/lib/mock-data-context"
+import { AuthProvider } from "@/lib/auth-context"
 import App from "./App"
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -16,10 +17,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           and move data access into API calls (hooks/services).
         */}
         <MockDataProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-          <Toaster />
+          <AuthProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+            <Toaster />
+          </AuthProvider>
         </MockDataProvider>
     </ThemeProvider>
   </React.StrictMode>,

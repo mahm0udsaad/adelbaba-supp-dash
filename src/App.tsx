@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import DashboardLayout from "@/components/layout/dashboard-layout"
+import { AuthGuard } from "@/components/auth-guard"
+import LoginPage from "@/components/pages/login/page"
 
 // Dashboard pages
 import DashboardHome from "@/components/pages/dashboard/page"
@@ -23,7 +25,7 @@ import ToolsPage from "@/components/pages/dashboard/tools/page"
 function App() {
   return (
     <Routes>
-      <Route path="/dashboard" element={<DashboardLayout />}>
+      <Route path="/dashboard" element={<AuthGuard><DashboardLayout /></AuthGuard>}>
         <Route index element={<DashboardHome />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="ads" element={<AdsPage />} />
@@ -42,6 +44,7 @@ function App() {
         <Route path="rfq/:id" element={<RFQDetailPage />} />
         <Route path="tools" element={<ToolsPage />} />
       </Route>
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
