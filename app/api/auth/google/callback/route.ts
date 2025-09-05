@@ -73,13 +73,13 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error || "missing_code")}`)
   }
 
-  const clientId = process.env.GOOGLE_CLIENT_ID
+  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET
   if (!clientId || !clientSecret) {
     return NextResponse.redirect(`${origin}/login?error=missing_google_credentials`)
   }
 
-  const redirectUri = `${origin}/api/auth/google/callback`
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${origin}/api/auth/google/callback`
 
   try {
     const tokens = await exchangeCodeForTokens({ code, clientId, clientSecret, redirectUri })

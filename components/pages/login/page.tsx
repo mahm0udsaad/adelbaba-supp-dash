@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { BarChart3, Package, Users, TrendingUp, ShoppingCart, DollarSign, Globe, Truck } from "lucide-react"
+import LoginSocial from "@/src/features/auth/LoginSocial"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [socialLoading, setSocialLoading] = useState<null | "google" | "facebook">(null)
-  const { socialLogin } = useAuth()
+  const { socialLogin, login, checkAndApplyRouting } = useAuth()
 
   const facebookAppId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID as string | undefined
 
@@ -82,13 +83,16 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
+    if (!email || !password) return
+    
     setLoading(true)
     try {
-      // Simulated login logic
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      console.log("Login successful")
+      await login({ email, password })
+      // Use the centralized routing logic
+      setTimeout(() => checkAndApplyRouting(), 100)
     } catch (error) {
-      console.error("Login failed")
+      console.error("Login failed:", error)
+      // You might want to show an error toast here
     } finally {
       setLoading(false)
     }
@@ -96,14 +100,9 @@ export default function LoginPage() {
 
   async function exchangeSocialToken(provider: "google" | "facebook", token: string) {
     try {
-      const data = await socialLogin(provider, token)
-      const cs = data?.completion_status || {}
-      const isNewUser = !cs?.profile_completed || !cs?.shipping_configured || !cs?.certificates_uploaded || !cs?.first_product_added
-      if (isNewUser) {
-        window.location.assign("/onboarding")
-      } else {
-        window.location.assign("/dashboard")
-      }
+      await socialLogin(provider, token)
+      // Use the centralized routing logic
+      setTimeout(() => checkAndApplyRouting(), 100)
     } catch (err) {
       console.error("Social login failed", err)
     } finally {
@@ -262,26 +261,7 @@ export default function LoginPage() {
                     <span className="bg-white px-2 text-muted-foreground">or continue with</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-11"
-                    onClick={handleGoogleLogin}
-                    disabled={socialLoading !== null}
-                  >
-                    {socialLoading === "google" ? "Connecting..." : "Google"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-11"
-                    onClick={handleFacebookLogin}
-                    disabled={socialLoading !== null}
-                  >
-                    {socialLoading === "facebook" ? "Connecting..." : "Facebook"}
-                  </Button>
-                </div>
+                <LoginSocial />
               </div>
 
               <div className="mt-6 text-center">

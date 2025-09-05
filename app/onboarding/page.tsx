@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -61,7 +62,11 @@ interface CompletionStatus {
 }
 
 export default function OnboardingPage() {
+  const { fetchProfile, updateProfile, updateCompletionStatus, completionStatus: authCompletionStatus, profile } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
   const [completionStatus, setCompletionStatus] = useState<CompletionStatus>({
     business_profile: false,
     factory_images: false,
@@ -97,6 +102,57 @@ export default function OnboardingPage() {
     incoterms: [] as string[],
     configureLater: false,
   })
+
+  // Fetch profile data on component mount and prefill forms
+  useEffect(() => {
+    const loadProfile = async () => {
+      setProfileLoading(true)
+      setProfileError(null)
+      try {
+        const profileData = await fetchProfile()
+        if (profileData) {
+          // Prefill business profile form
+          setBusinessProfile(prev => ({
+            ...prev,
+            companyName: profileData.name || "",
+            foundedYear: profileData.founded_year?.toString() || "",
+            description: profileData.description || "",
+            primaryContact: {
+              ...prev.primaryContact,
+              fullName: profileData.contacts?.[0]?.email.split('@')[0] || "",
+              phone: profileData.contacts?.[0]?.phone || "",
+              email: profileData.contacts?.[0]?.email || "",
+            },
+            secondaryContact: {
+              ...prev.secondaryContact,
+              phone: profileData.contacts?.[1]?.phone || "",
+              email: profileData.contacts?.[1]?.email || "",
+              show: !!profileData.contacts?.[1],
+            }
+          }))
+        }
+      } catch (error) {
+        setProfileError("Failed to load profile data. You can still fill out the form manually.")
+      } finally {
+        setProfileLoading(false)
+      }
+    }
+
+    loadProfile()
+  }, [fetchProfile])
+
+  // Sync completion status with auth context
+  useEffect(() => {
+    if (authCompletionStatus) {
+      setCompletionStatus({
+        business_profile: authCompletionStatus.profile_completed,
+        factory_images: false, // This might need to be mapped from a different field
+        certificates: authCompletionStatus.certificates_uploaded,
+        shipping_configuration: authCompletionStatus.shipping_configured,
+        first_product: authCompletionStatus.first_product_added,
+      })
+    }
+  }, [authCompletionStatus])
 
   const shippingCompanies: ShippingCompany[] = [
     {
@@ -189,17 +245,85 @@ export default function OnboardingPage() {
     setCertificates((prev) => prev.filter((cert) => cert.id !== id))
   }
 
-  const handleStepCompletion = (stepId: string) => {
-    setCompletionStatus((prev) => ({ ...prev, [stepId]: true }))
+  const handleStepCompletion = async (stepId: string) => {
+    setIsLoading(true)
+    try {
+      // Handle business profile step with API save
+      if (stepId === "business_profile") {
+        await handleBusinessProfileSave()
+      }
+      
+      // Update local completion status
+      setCompletionStatus((prev) => ({ ...prev, [stepId]: true }))
+      
+      // Update auth context completion status
+      const authStatusUpdate: any = {}
+      if (stepId === "business_profile") authStatusUpdate.profile_completed = true
+      if (stepId === "certificates") authStatusUpdate.certificates_uploaded = true
+      if (stepId === "shipping_configuration") authStatusUpdate.shipping_configured = true
+      if (stepId === "first_product") authStatusUpdate.first_product_added = true
+      
+      if (Object.keys(authStatusUpdate).length > 0) {
+        updateCompletionStatus(authStatusUpdate)
+      }
 
-    // Move to next incomplete step
-    const nextIncomplete = steps.findIndex(
-      (step, index) => index > currentStep && !completionStatus[step.id as keyof CompletionStatus],
-    )
+      // Move to next incomplete step
+      const nextIncomplete = steps.findIndex(
+        (step, index) => index > currentStep && !completionStatus[step.id as keyof CompletionStatus],
+      )
 
-    if (nextIncomplete !== -1) {
-      setCurrentStep(nextIncomplete)
+      if (nextIncomplete !== -1) {
+        setCurrentStep(nextIncomplete)
+      }
+    } catch (error) {
+      console.error("Failed to complete step:", error)
+      // You might want to show an error toast here
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  const handleBusinessProfileSave = async () => {
+    const formData = new FormData()
+    
+    // Add _method for PUT request
+    formData.append("_method", "PUT")
+    
+    // Add logo if present
+    if (businessProfile.logo) {
+      formData.append("logo", businessProfile.logo)
+    }
+    
+    // Add company details
+    formData.append("name", businessProfile.companyName)
+    if (businessProfile.foundedYear) {
+      formData.append("founded_year", businessProfile.foundedYear)
+    }
+    if (businessProfile.description) {
+      formData.append("description", businessProfile.description)
+    }
+    
+    // Add primary contact
+    if (businessProfile.primaryContact.phone) {
+      formData.append("contacts[0][phone]", businessProfile.primaryContact.phone)
+    }
+    if (businessProfile.primaryContact.email) {
+      formData.append("contacts[0][email]", businessProfile.primaryContact.email)
+    }
+    formData.append("contacts[0][is_primary]", "1")
+    
+    // Add secondary contact if present
+    if (businessProfile.secondaryContact.show && (businessProfile.secondaryContact.phone || businessProfile.secondaryContact.email)) {
+      if (businessProfile.secondaryContact.phone) {
+        formData.append("contacts[1][phone]", businessProfile.secondaryContact.phone)
+      }
+      if (businessProfile.secondaryContact.email) {
+        formData.append("contacts[1][email]", businessProfile.secondaryContact.email)
+      }
+      formData.append("contacts[1][is_primary]", "0")
+    }
+    
+    await updateProfile(formData)
   }
 
   const canCompleteStep = (stepId: string) => {
@@ -857,6 +981,43 @@ export default function OnboardingPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Profile Loading Error */}
+                {profileError && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-red-800">{profileError}</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          const loadProfile = async () => {
+                            setProfileLoading(true)
+                            setProfileError(null)
+                            try {
+                              await fetchProfile()
+                            } catch (error) {
+                              setProfileError("Failed to load profile data. You can still fill out the form manually.")
+                            } finally {
+                              setProfileLoading(false)
+                            }
+                          }
+                          await loadProfile()
+                        }}
+                        disabled={profileLoading}
+                      >
+                        {profileLoading ? "Retrying..." : "Retry"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Profile Loading Indicator */}
+                {profileLoading && !profileError && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">Loading your profile data...</p>
+                  </div>
+                )}
+                
                 {renderStepContent()}
 
                 {/* Action Buttons */}
@@ -892,10 +1053,10 @@ export default function OnboardingPage() {
 
                     <Button
                       onClick={() => handleStepCompletion(steps[currentStep].id)}
-                      disabled={!canCompleteStep(steps[currentStep].id)}
+                      disabled={!canCompleteStep(steps[currentStep].id) || isLoading || profileLoading}
                       className="px-8 bg-orange-600 hover:bg-orange-700 text-white"
                     >
-                      Save & Continue
+                      {isLoading ? "Saving..." : "Save & Continue"}
                     </Button>
                   </div>
                 </div>

@@ -4,12 +4,12 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const origin = `${url.protocol}//${url.host}`
 
-  const clientId = process.env.GOOGLE_CLIENT_ID
+  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
   if (!clientId) {
     return NextResponse.redirect(`${origin}/login?error=missing_google_client_id`)
   }
 
-  const redirectUri = `${origin}/api/auth/google/callback`
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${origin}/api/auth/google/callback`
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
