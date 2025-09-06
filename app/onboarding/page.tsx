@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -28,6 +27,10 @@ import {
   Download,
 } from "lucide-react"
 import Image from "next/image"
+import apiClient from "@/lib/axios"
+import { useSession } from "next-auth/react"
+import { useAuth, useCompany } from "@/src/contexts/auth-context"
+import { useCompany as useCompanyHook } from "@/src/hooks/use-company"
 
 interface OnboardingStep {
   id: string
@@ -62,7 +65,10 @@ interface CompletionStatus {
 }
 
 export default function OnboardingPage() {
-  const { fetchProfile, updateProfile, updateCompletionStatus, completionStatus: authCompletionStatus, profile } = useAuth()
+  const { data: session } = useSession()
+  const { authData, fetchCompanyData } = useAuth()
+  const { company, isLoading: companyLoading, error: companyError, fetchCompany, updateCompany } = useCompanyHook()
+  const authCompletionStatus = authData.completionStatus
   const [currentStep, setCurrentStep] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [profileLoading, setProfileLoading] = useState(false)
@@ -77,6 +83,7 @@ export default function OnboardingPage() {
 
   const [businessProfile, setBusinessProfile] = useState({
     logo: null as File | null,
+    existingLogoUrl: "" as string, // Store the existing logo URL from company data
     companyName: "",
     foundedYear: "",
     description: "",
@@ -103,50 +110,62 @@ export default function OnboardingPage() {
     configureLater: false,
   })
 
-  // Fetch profile data on component mount and prefill forms
+  // Fetch company data on component mount and prefill forms
   useEffect(() => {
-    const loadProfile = async () => {
+    const loadCompanyData = async () => {
       setProfileLoading(true)
       setProfileError(null)
+      
       try {
-        const profileData = await fetchProfile()
-        if (profileData) {
-          // Prefill business profile form
-          setBusinessProfile(prev => ({
-            ...prev,
-            companyName: profileData.name || "",
-            foundedYear: profileData.founded_year?.toString() || "",
-            description: profileData.description || "",
-            primaryContact: {
-              ...prev.primaryContact,
-              fullName: profileData.contacts?.[0]?.email.split('@')[0] || "",
-              phone: profileData.contacts?.[0]?.phone || "",
-              email: profileData.contacts?.[0]?.email || "",
-            },
-            secondaryContact: {
-              ...prev.secondaryContact,
-              phone: profileData.contacts?.[1]?.phone || "",
-              email: profileData.contacts?.[1]?.email || "",
-              show: !!profileData.contacts?.[1],
-            }
-          }))
+        // First try to get company data from context/localStorage
+        if (company) {
+          populateFormWithCompanyData(company)
+        } else {
+          // If no company data in context, fetch from API
+          await fetchCompany()
+          if (company) {
+            populateFormWithCompanyData(company)
+          }
         }
       } catch (error) {
-        setProfileError("Failed to load profile data. You can still fill out the form manually.")
+        console.error("Failed to load company data:", error)
+        setProfileError("Failed to load company data. You can still fill out the form manually.")
       } finally {
         setProfileLoading(false)
       }
     }
 
-    loadProfile()
-  }, [fetchProfile])
+    const populateFormWithCompanyData = (companyData: any) => {
+      setBusinessProfile(prev => ({
+        ...prev,
+        companyName: companyData.name || "",
+        foundedYear: companyData.founded_year?.toString() || "",
+        description: companyData.description || "",
+        existingLogoUrl: companyData.logo || "", // Store the existing logo URL
+        primaryContact: {
+          ...prev.primaryContact,
+          fullName: companyData.owner?.name || companyData.contacts?.[0]?.email?.split('@')[0] || "",
+          phone: companyData.contacts?.[0]?.phone || companyData.owner?.phone || "",
+          email: companyData.contacts?.[0]?.email || companyData.owner?.email || "",
+        },
+        secondaryContact: {
+          ...prev.secondaryContact,
+          phone: companyData.contacts?.[1]?.phone || "",
+          email: companyData.contacts?.[1]?.email || "",
+          show: !!companyData.contacts?.[1],
+        }
+      }))
+    }
 
-  // Sync completion status with auth context
+    loadCompanyData()
+  }, [company, fetchCompany])
+
+  // Sync completion status from session
   useEffect(() => {
     if (authCompletionStatus) {
       setCompletionStatus({
         business_profile: authCompletionStatus.profile_completed,
-        factory_images: false, // This might need to be mapped from a different field
+        factory_images: false,
         certificates: authCompletionStatus.certificates_uploaded,
         shipping_configuration: authCompletionStatus.shipping_configured,
         first_product: authCompletionStatus.first_product_added,
@@ -220,8 +239,20 @@ export default function OnboardingPage() {
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file && (file.type === "image/png" || file.type === "image/jpeg") && file.size <= 2 * 1024 * 1024) {
-      setBusinessProfile((prev) => ({ ...prev, logo: file }))
+      setBusinessProfile((prev) => ({ 
+        ...prev, 
+        logo: file,
+        existingLogoUrl: "" // Clear existing logo URL when new file is uploaded
+      }))
     }
+  }
+
+  const handleLogoRemove = () => {
+    setBusinessProfile((prev) => ({ 
+      ...prev, 
+      logo: null,
+      existingLogoUrl: "" // Clear both new file and existing URL
+    }))
   }
 
   const handleFactoryImagesUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -248,82 +279,59 @@ export default function OnboardingPage() {
   const handleStepCompletion = async (stepId: string) => {
     setIsLoading(true)
     try {
-      // Handle business profile step with API save
       if (stepId === "business_profile") {
         await handleBusinessProfileSave()
       }
-      
-      // Update local completion status
       setCompletionStatus((prev) => ({ ...prev, [stepId]: true }))
-      
-      // Update auth context completion status
-      const authStatusUpdate: any = {}
-      if (stepId === "business_profile") authStatusUpdate.profile_completed = true
-      if (stepId === "certificates") authStatusUpdate.certificates_uploaded = true
-      if (stepId === "shipping_configuration") authStatusUpdate.shipping_configured = true
-      if (stepId === "first_product") authStatusUpdate.first_product_added = true
-      
-      if (Object.keys(authStatusUpdate).length > 0) {
-        updateCompletionStatus(authStatusUpdate)
-      }
-
-      // Move to next incomplete step
-      const nextIncomplete = steps.findIndex(
-        (step, index) => index > currentStep && !completionStatus[step.id as keyof CompletionStatus],
-      )
-
-      if (nextIncomplete !== -1) {
-        setCurrentStep(nextIncomplete)
-      }
     } catch (error) {
       console.error("Failed to complete step:", error)
-      // You might want to show an error toast here
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleBusinessProfileSave = async () => {
-    const formData = new FormData()
-    
-    // Add _method for PUT request
-    formData.append("_method", "PUT")
-    
-    // Add logo if present
-    if (businessProfile.logo) {
-      formData.append("logo", businessProfile.logo)
-    }
-    
-    // Add company details
-    formData.append("name", businessProfile.companyName)
-    if (businessProfile.foundedYear) {
-      formData.append("founded_year", businessProfile.foundedYear)
-    }
-    if (businessProfile.description) {
-      formData.append("description", businessProfile.description)
-    }
-    
-    // Add primary contact
-    if (businessProfile.primaryContact.phone) {
-      formData.append("contacts[0][phone]", businessProfile.primaryContact.phone)
-    }
-    if (businessProfile.primaryContact.email) {
-      formData.append("contacts[0][email]", businessProfile.primaryContact.email)
-    }
-    formData.append("contacts[0][is_primary]", "1")
-    
-    // Add secondary contact if present
-    if (businessProfile.secondaryContact.show && (businessProfile.secondaryContact.phone || businessProfile.secondaryContact.email)) {
-      if (businessProfile.secondaryContact.phone) {
-        formData.append("contacts[1][phone]", businessProfile.secondaryContact.phone)
+    try {
+      const contacts = []
+      
+      // Add primary contact
+      if (businessProfile.primaryContact.phone || businessProfile.primaryContact.email) {
+        contacts.push({
+          phone: businessProfile.primaryContact.phone || "",
+          email: businessProfile.primaryContact.email || "",
+          is_primary: 1,
+        })
       }
-      if (businessProfile.secondaryContact.email) {
-        formData.append("contacts[1][email]", businessProfile.secondaryContact.email)
+      
+      // Add secondary contact if enabled
+      if (businessProfile.secondaryContact.show && (businessProfile.secondaryContact.phone || businessProfile.secondaryContact.email)) {
+        contacts.push({
+          phone: businessProfile.secondaryContact.phone || "",
+          email: businessProfile.secondaryContact.email || "",
+          is_primary: 0,
+        })
       }
-      formData.append("contacts[1][is_primary]", "0")
+
+      const updateData: any = {
+        name: businessProfile.companyName,
+        description: businessProfile.description,
+        founded_year: businessProfile.foundedYear ? parseInt(businessProfile.foundedYear) : undefined,
+        logo: businessProfile.logo || undefined,
+        contacts: contacts.length > 0 ? contacts : undefined,
+      }
+
+      // If both logo and existingLogoUrl are empty, we need to handle logo removal
+      if (!businessProfile.logo && !businessProfile.existingLogoUrl) {
+        // Add flag to remove the existing logo
+        updateData.remove_logo = true
+        delete updateData.logo
+      }
+
+      await updateCompany(updateData)
+    } catch (error) {
+      console.error("Failed to save business profile:", error)
+      throw error // Re-throw to allow the calling function to handle the error
     }
-    
-    await updateProfile(formData)
   }
 
   const canCompleteStep = (stepId: string) => {
@@ -355,11 +363,15 @@ export default function OnboardingPage() {
                 <Label className="text-base font-medium text-gray-900">Company logo</Label>
                 <div className="mt-2">
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors">
-                    {businessProfile.logo ? (
+                    {(businessProfile.logo || businessProfile.existingLogoUrl) ? (
                       <div className="space-y-4">
                         <div className="w-20 h-20 mx-auto rounded-lg overflow-hidden bg-white shadow-sm">
                           <Image
-                            src={URL.createObjectURL(businessProfile.logo) || "/placeholder.svg"}
+                            src={
+                              businessProfile.logo 
+                                ? URL.createObjectURL(businessProfile.logo) 
+                                : businessProfile.existingLogoUrl || "/placeholder.svg"
+                            }
                             alt="Company logo"
                             width={80}
                             height={80}
@@ -372,16 +384,21 @@ export default function OnboardingPage() {
                             variant="outline"
                             onClick={() => document.getElementById("logo-upload")?.click()}
                           >
-                            Replace
+                            {businessProfile.logo ? "Replace" : "Change Logo"}
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setBusinessProfile((prev) => ({ ...prev, logo: null }))}
+                            onClick={handleLogoRemove}
                           >
                             Remove
                           </Button>
                         </div>
+                        {businessProfile.existingLogoUrl && !businessProfile.logo && (
+                          <p className="text-xs text-gray-500">
+                            Current logo from your company profile
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -981,7 +998,6 @@ export default function OnboardingPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Profile Loading Error */}
                 {profileError && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                     <div className="flex items-center justify-between">
@@ -994,7 +1010,7 @@ export default function OnboardingPage() {
                             setProfileLoading(true)
                             setProfileError(null)
                             try {
-                              await fetchProfile()
+                              await apiClient.get("/v1/profile")
                             } catch (error) {
                               setProfileError("Failed to load profile data. You can still fill out the form manually.")
                             } finally {
@@ -1011,7 +1027,6 @@ export default function OnboardingPage() {
                   </div>
                 )}
                 
-                {/* Profile Loading Indicator */}
                 {profileLoading && !profileError && (
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800">Loading your profile data...</p>
@@ -1020,7 +1035,6 @@ export default function OnboardingPage() {
                 
                 {renderStepContent()}
 
-                {/* Action Buttons */}
                 <div className="flex gap-4 justify-between pt-6 border-t">
                   <div>
                     {currentStep > 0 && (

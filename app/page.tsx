@@ -1,26 +1,27 @@
 "use client"
 import { useEffect } from "react"
-import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { useAuth } from "@/src/contexts/auth-context"
+import { getRedirectPath } from "@/src/utils/auth-utils"
 
 export default function Page() {
-  const { user, isLoading, checkAndApplyRouting } = useAuth()
+  const { data: session, status } = useSession()
+  const { authData } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (isLoading) return
+    if (status === "loading") return
 
-    if (!user) {
-      // Not authenticated, redirect to login
-      router.replace("/login")
-    } else {
-      // Authenticated, apply conditional routing
-      checkAndApplyRouting()
-    }
-  }, [user, isLoading, checkAndApplyRouting, router])
+    const user = session?.user || authData.user
+    const roles = ((session as any)?.roles as string[]) || authData.roles
+    const completionStatus = (session as any)?.completionStatus || authData.completionStatus
 
-  // Show loading while determining where to go
-  if (isLoading) {
+    const redirectPath = getRedirectPath(user, roles, completionStatus)
+    router.replace(redirectPath)
+  }, [session, status, authData, router])
+
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

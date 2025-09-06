@@ -3,9 +3,16 @@ import { authOptions } from "@/src/lib/authOptions"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
-  return new Response(JSON.stringify(session), {
-    headers: { "Content-Type": "application/json" },
-  })
+  
+  if (session) {
+    return new Response(JSON.stringify({ protected: session }), {
+      headers: { "Content-Type": "application/json" },
+    })
+  } else {
+    return new Response(JSON.stringify({ protected: false }), {
+      headers: { "Content-Type": "application/json" },
+    })
+  }
 }
 
 

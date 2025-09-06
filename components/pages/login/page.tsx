@@ -1,155 +1,58 @@
 "use client"
 import type React from "react"
-import { useEffect, useState } from "react"
-import apiClient from "@/lib/axios"
-import { useAuth } from "@/lib/auth-context"
+import { useState } from "react"
+import { signIn, getSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/src/contexts/auth-context"
+import { getRedirectPath } from "@/src/utils/auth-utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { BarChart3, Package, Users, TrendingUp, ShoppingCart, DollarSign, Globe, Truck } from "lucide-react"
 import LoginSocial from "@/src/features/auth/LoginSocial"
+import Link from "next/link"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const [socialLoading, setSocialLoading] = useState<null | "google" | "facebook">(null)
-  const { socialLogin, login, checkAndApplyRouting } = useAuth()
-
-  const facebookAppId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID as string | undefined
-
-  // If redirected back from server callback with a Google token in query, exchange it
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const url = new URL(window.location.href)
-    const googleToken = url.searchParams.get("g_token")
-    if (googleToken) {
-      setSocialLoading("google")
-      exchangeSocialToken("google", googleToken)
-      url.searchParams.delete("g_token")
-      window.history.replaceState({}, "", url.toString())
-    }
-  }, [])
-
-  // Load Facebook SDK if env key is present (Google handled server-side)
-  useEffect(() => {
-    const loadScript = (src: string, id: string) =>
-      new Promise<void>((resolve, reject) => {
-        if (document.getElementById(id)) return resolve()
-        const s = document.createElement("script")
-        s.id = id
-        s.src = src
-        s.async = true
-        s.onload = () => resolve()
-        s.onerror = () => reject(new Error(`Failed to load ${src}`))
-        document.body.appendChild(s)
-      })
-
-    const tasks: Promise<void>[] = []
-    // Google handled server-side; no client SDK required
-    if (facebookAppId) {
-      // Facebook SDK requires a root element
-      if (!document.getElementById("fb-root")) {
-        const root = document.createElement("div")
-        root.id = "fb-root"
-        document.body.appendChild(root)
-      }
-      tasks.push(
-        new Promise<void>((resolve) => {
-          ;(window as any).fbAsyncInit = function () {
-            ;(window as any).FB.init({
-              appId: facebookAppId,
-              cookie: true,
-              xfbml: false,
-              version: "v19.0",
-            })
-            resolve()
-          }
-          const id = "facebook-jssdk"
-          if (document.getElementById(id)) return resolve()
-          const js = document.createElement("script")
-          js.id = id
-          js.src = "https://connect.facebook.net/en_US/sdk.js"
-          document.body.appendChild(js)
-        })
-      )
-    }
-
-    if (tasks.length) {
-      Promise.allSettled(tasks).catch(() => {})
-    }
-  }, [facebookAppId])
+  const router = useRouter()
+  const { authData } = useAuth()
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     if (!email || !password) return
-    
     setLoading(true)
     try {
-      await login({ email, password })
-      // Use the centralized routing logic
-      setTimeout(() => checkAndApplyRouting(), 100)
-    } catch (error) {
+      const result = await signIn("credentials", { redirect: false, email, password })
+      if (result?.error) {
+        throw new Error(result.error)
+      }
+      // Decide destination based on session data
+      const session = await getSession()
+      const user = session?.user || authData.user
+      const roles = ((session as any)?.roles as string[]) || authData.roles
+      const completionStatus = (session as any)?.completionStatus || authData.completionStatus
+
+      const redirectPath = getRedirectPath(user, roles, completionStatus)
+      router.replace(redirectPath)
+    } catch (error: any) {
       console.error("Login failed:", error)
-      // You might want to show an error toast here
+      const errorMessage = error?.message || 'Login failed. Please check your credentials and try again.'
+      alert(`Login Error: ${errorMessage}`)
     } finally {
       setLoading(false)
     }
   }
 
-  async function exchangeSocialToken(provider: "google" | "facebook", token: string) {
-    try {
-      await socialLogin(provider, token)
-      // Use the centralized routing logic
-      setTimeout(() => checkAndApplyRouting(), 100)
-    } catch (err) {
-      console.error("Social login failed", err)
-    } finally {
-      setSocialLoading(null)
-    }
-  }
-
-  const handleGoogleLogin = async () => {
-    setSocialLoading("google")
-    window.location.assign("/api/auth/google/start")
-  }
-
-  const handleFacebookLogin = async () => {
-    if (!facebookAppId) {
-      console.error("Missing NEXT_PUBLIC_FACEBOOK_APP_ID")
-      return
-    }
-    setSocialLoading("facebook")
-    try {
-      const FB = (window as any).FB
-      if (!FB) throw new Error("Facebook SDK not loaded")
-      FB.login(
-        (response: any) => {
-          const accessToken = response?.authResponse?.accessToken
-          if (accessToken) {
-            exchangeSocialToken("facebook", accessToken)
-          } else {
-            setSocialLoading(null)
-          }
-        },
-        { scope: "public_profile,email" }
-      )
-    } catch (e) {
-      console.error(e)
-      setSocialLoading(null)
-    }
-  }
-
   const features = [
     { icon: BarChart3, title: "Analytics Dashboard", description: "Track sales, orders, and performance metrics in real-time" },
-    { icon: Package, title: "Inventory Management", description: "Manage your product catalog and stock levels efficiently" },
-    { icon: Users, title: "Customer Insights", description: "Understand your buyers with detailed customer analytics" },
-    { icon: TrendingUp, title: "Sales Growth", description: "Boost your revenue with our advanced selling tools" },
+    { icon: Package, title: "Inventory Management",  description: "Manage your product catalog and stock levels efficiently" },
+    { icon: TrendingUp, title: "Sales Growth",       description: "Boost your revenue with our advanced selling tools" },
     { icon: ShoppingCart, title: "Order Management", description: "Process and fulfill orders seamlessly across B2B & B2C" },
-    { icon: DollarSign, title: "Financial Reports", description: "Access comprehensive financial reporting and insights" },
-    { icon: Globe, title: "Multi-Channel Selling", description: "Expand your reach across multiple marketplaces" },
-    { icon: Truck, title: "Logistics Integration", description: "Streamlined shipping and delivery management" }
+    { icon: DollarSign, title: "Financial Reports",  description: "Access comprehensive financial reporting and insights" },
+    { icon: Truck, title: "Logistics Integration",   description: "Streamlined shipping and delivery management" }
   ]
 
   return (
@@ -267,9 +170,9 @@ export default function LoginPage() {
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                   New supplier? {" "}
-                  <button className="text-amber-600 hover:text-amber-700 font-medium bg-transparent border-none cursor-pointer">
+                  <Link href={"https://adil-baba.com/sell"} className="text-amber-600 hover:text-amber-700 font-medium bg-transparent border-none cursor-pointer">
                     Register your business
-                  </button>
+                  </Link>
                 </p>
               </div>
             </CardContent>

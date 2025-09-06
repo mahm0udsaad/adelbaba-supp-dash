@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n/context"
 import { SidebarHeader } from "./sidebar-header"
 import { SidebarNavigation } from "./sidebar-navigation"
 import { UserProfile } from "./user-profile"
+import { useSession } from "next-auth/react"
 
 interface SidebarProps {
   sidebarOpen: boolean
@@ -14,11 +15,12 @@ interface SidebarProps {
 
 export function Sidebar({ sidebarOpen, setSidebarOpen, toggleLanguage }: SidebarProps) {
   const { isArabic } = useI18n()
+  const { data: session } = useSession()
 
   const user = {
-    name: "Ahmed Al-Rashid",
-    email: "ahmed@adelbaba.com",
-    avatar: "/placeholder.svg?height=32&width=32",
+    name: session?.user?.name || "Guest",
+    email: session?.user?.email || "",
+    avatar: (session?.user as any)?.picture || "/placeholder.svg?height=32&width=32",
   }
 
   return (

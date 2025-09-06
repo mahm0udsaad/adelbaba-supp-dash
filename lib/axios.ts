@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from "axios"
 
 // Centralized Axios client used across the app
 const apiClient: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "/",
+  baseURL: (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "") + "/api",
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
@@ -11,16 +11,20 @@ const apiClient: AxiosInstance = axios.create({
   withCredentials: false,
 })
 
-// Attach Authorization header from localStorage token if available
-apiClient.interceptors.request.use((config) => {
+// Attach Authorization header from NextAuth session token if available
+apiClient.interceptors.request.use(async (config) => {
   try {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-    if (token) {
-      config.headers = config.headers ?? {}
-      config.headers.Authorization = `Bearer ${token}`
+    if (typeof window !== "undefined") {
+      const { getSession } = await import("next-auth/react")
+      const session = await getSession()
+      const token = (session as any)?.token as string | undefined
+      if (token) {
+        config.headers = config.headers ?? {}
+        config.headers.Authorization = `Bearer ${token}`
+      }
     }
   } catch (_) {
-    // Safely ignore storage errors
+    // Safely ignore session errors
   }
   return config
 })
@@ -28,22 +32,33 @@ apiClient.interceptors.request.use((config) => {
 // Response interceptor to handle 401 errors and session expiry
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config
+
     // Handle 401 unauthorized responses
-    if (error.response?.status === 401) {
-      // Clear authentication data from localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem("token")
-        localStorage.removeItem("user")
-        localStorage.removeItem("roles")
-        localStorage.removeItem("completion_status")
-        localStorage.removeItem("profile")
-        
-        // Clear the authorization header
-        delete apiClient.defaults.headers.Authorization
-        
-        // Redirect to login page (soft logout)
-        window.location.href = "/login"
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+
+      try {
+        if (typeof window !== 'undefined') {
+          const { getSession, signOut } = await import('next-auth/react')
+          const session = await getSession()
+          const refreshedToken = (session as any)?.token
+
+          if (refreshedToken) {
+            originalRequest.headers = originalRequest.headers ?? {}
+            originalRequest.headers.Authorization = `Bearer ${refreshedToken}`
+            return apiClient(originalRequest)
+          }
+
+          await signOut({ redirect: true, callbackUrl: '/login' })
+        }
+      } catch (refreshError) {
+        // If anything fails, force sign out
+        if (typeof window !== 'undefined') {
+          const { signOut } = await import('next-auth/react')
+          await signOut({ redirect: true, callbackUrl: '/login' })
+        }
       }
     }
     

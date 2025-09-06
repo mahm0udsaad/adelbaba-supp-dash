@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { User, Settings, LogOut } from "lucide-react"
 import { useI18n } from "@/lib/i18n/context"
+import { signOut } from "next-auth/react"
 
 interface UserData {
   name: string
@@ -63,7 +64,7 @@ export function UserProfile({ user }: UserProfileProps) {
               <span>{t.settings}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onSelect={async (e) => { e.preventDefault(); await signOut({ redirect: true, callbackUrl: "/login" }) }}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>{t.logout}</span>
             </DropdownMenuItem>
