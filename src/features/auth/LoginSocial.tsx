@@ -4,36 +4,23 @@ import { signIn, getSession } from "next-auth/react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { getRedirectPath } from "@/src/utils/auth-utils"
 
 export default function LoginSocial() {
   const [isLoading, setIsLoading] = useState(false)
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null)
   const router = useRouter()
 
-  const routeAfterLogin = async () => {
-    const session = await getSession()
-    const roles = ((session as any)?.roles as string[]) || []
-    const completionStatus = (session as any)?.completionStatus as any | null
-    const isOwner = roles.includes("Owner")
-    const shippingNotConfigured = !completionStatus?.shipping_configured
-    const certificatesNotUploaded = !completionStatus?.certificates_uploaded
-
-    if (isOwner && shippingNotConfigured && certificatesNotUploaded) {
-      router.replace("/onboarding")
-    } else {
-      router.replace("/dashboard")
-    }
-  }
+  // For OAuth providers, NextAuth will always perform a full redirect
+  // through the provider and back. We set callbackUrl to "/" so that
+  // our app's root redirect logic can route to onboarding or dashboard.
 
   const handleSocialLogin = async (provider: "google" | "facebook") => {
     setIsLoading(true)
     setLoadingProvider(provider)
     
     try {
-      const result = await signIn(provider, { 
-        redirect: false,
-        callbackUrl: "/dashboard" 
-      })
+      const result = await signIn(provider)
       
       if (result?.error) {
         console.error(`${provider} login failed:`, result.error)
@@ -42,10 +29,9 @@ export default function LoginSocial() {
       }
       
       if (result?.ok) {
-        setTimeout(() => {
-          routeAfterLogin()
-          toast.success(`Successfully logged in with ${provider}!`)
-        }, 300)
+        // The browser will be navigating to "/" per callbackUrl,
+        // where the app will compute the final destination.
+        toast.success(`Successfully logged in with ${provider}!`)
       }
     } catch (error) {
       console.error(`${provider} login error:`, error)
@@ -96,5 +82,3 @@ export default function LoginSocial() {
     </div>
   )
 }
-
-

@@ -32,7 +32,7 @@ interface Certificate {
 
 export default function CertificatesPage() {
   const { t, isArabic } = useI18n()
-  const { certificates: allCertificates } = useMockData()
+  const { certificates: allCertificates, setCertificates } = useMockData()
   const [loading] = useState(false)
   const [typeFilter, setTypeFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -60,9 +60,66 @@ export default function CertificatesPage() {
 
   const handleAddCertificate = async () => {
     try {
-      // In mock mode, just append locally or show a toast
+      // Basic validation
+      if (
+        !newCertificate.name ||
+        !newCertificate.type ||
+        !newCertificate.issuer ||
+        !newCertificate.issueDate ||
+        !newCertificate.expiryDate ||
+        !newCertificate.certificateNumber ||
+        !newCertificate.scope
+      ) {
+        toast({ title: t.failedToAddCertificate, description: isArabic ? "يرجى ملء جميع الحقول المطلوبة" : "Please fill all required fields", variant: "destructive" })
+        return
+      }
+
+      const now = new Date()
+      const issue = new Date(newCertificate.issueDate)
+      const expiry = new Date(newCertificate.expiryDate)
+      const diffMs = expiry.getTime() - now.getTime()
+      const days = diffMs / (1000 * 60 * 60 * 24)
+      const status: Certificate["status"] = expiry < now ? "expired" : days <= 60 ? "expiring_soon" : "active"
+
+      const applicableProducts = String(newCertificate.applicableProducts)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+
+      const toAdd: Certificate = {
+        id: String(Date.now()),
+        name: newCertificate.name,
+        type: newCertificate.type as Certificate["type"],
+        issuer: newCertificate.issuer,
+        issueDate: issue.toISOString(),
+        expiryDate: expiry.toISOString(),
+        status,
+        certificateNumber: newCertificate.certificateNumber,
+        scope: newCertificate.scope,
+        documentUrl: "",
+        verificationUrl: newCertificate.verificationUrl,
+        applicableProducts,
+        description: newCertificate.description,
+      }
+
+      setCertificates((prev) => [toAdd, ...prev])
+      setShowAddDialog(false)
+      setNewCertificate({
+        name: "",
+        type: "quality",
+        issuer: "",
+        issueDate: "",
+        expiryDate: "",
+        certificateNumber: "",
+        scope: "",
+        verificationUrl: "",
+        applicableProducts: "",
+        description: "",
+      })
+      toast({ title: t.certificateAdded, description: t.certificateAddedDesc })
     } catch (error) {
       console.error("Failed to add certificate:", error)
+      toast({ title: t.failedToAddCertificate, description: isArabic ? "تعذر إضافة الشهادة. حاول مرة أخرى." : "Could not add certificate. Please try again.", variant: "destructive" })
     }
   }
 

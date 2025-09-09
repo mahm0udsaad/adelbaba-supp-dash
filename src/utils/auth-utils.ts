@@ -134,14 +134,19 @@ export function clearAuthDataFromStorage(): void {
  * Check if user needs onboarding based on completion status
  */
 export function needsOnboarding(completionStatus: any): boolean {
+  // If we have no status, assume onboarding needed
   if (!completionStatus) return true
-  
-  return (
-    !completionStatus.profile_completed ||
-    !completionStatus.shipping_configured ||
-    !completionStatus.certificates_uploaded ||
-    !completionStatus.first_product_added
-  )
+
+  // Count how many required steps are incomplete (falsy)
+  const incompleteCount = [
+    completionStatus.profile_completed,
+    completionStatus.shipping_configured,
+    completionStatus.certificates_uploaded,
+    completionStatus.first_product_added,
+  ].reduce((acc, val) => acc + (val ? 0 : 1), 0)
+
+  // Redirect to onboarding only if two or more are incomplete
+  return incompleteCount >= 2
 }
 
 /**

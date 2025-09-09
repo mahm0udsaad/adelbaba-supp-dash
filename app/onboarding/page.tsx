@@ -6,31 +6,26 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Switch } from "@/components/ui/switch"
 import {
   CheckCircle,
   Building,
   Truck,
   FileText,
   Package,
-  Upload,
-  X,
-  Plus,
+      Plus,
   Camera,
-  Trash2,
-  Eye,
-  Download,
 } from "lucide-react"
-import Image from "next/image"
-import apiClient from "@/lib/axios"
 import { useSession } from "next-auth/react"
-import { useAuth, useCompany } from "@/src/contexts/auth-context"
+import { useAuth } from "@/src/contexts/auth-context"
 import { useCompany as useCompanyHook } from "@/src/hooks/use-company"
+import { factoryMediaApi, type FactoryImage } from "@/src/services/factory-media"
+import { certificatesApi, type CertificateItem, type PaginatedResponse } from "@/src/services/certificates"
+import BusinessProfileStep from "@/src/features/onboarding/BusinessProfileStep"
+import FactoryImagesStep from "@/src/features/onboarding/FactoryImagesStep"
+import CertificatesStep from "@/src/features/onboarding/CertificatesStep"
+import ShippingConfigurationStep from "@/src/features/onboarding/ShippingConfigurationStep"
+import FirstProductStep from "@/src/features/onboarding/FirstProductStep"
+import { toast } from "@/components/ui/use-toast"
 
 interface OnboardingStep {
   id: string
@@ -66,7 +61,7 @@ interface CompletionStatus {
 
 export default function OnboardingPage() {
   const { data: session } = useSession()
-  const { authData, fetchCompanyData } = useAuth()
+  const { authData, fetchCompanyData, updateAuthData } = useAuth()
   const { company, isLoading: companyLoading, error: companyError, fetchCompany, updateCompany } = useCompanyHook()
   const authCompletionStatus = authData.completionStatus
   const [currentStep, setCurrentStep] = useState(0)
@@ -108,6 +103,37 @@ export default function OnboardingPage() {
     shipsFrom: "",
     incoterms: [] as string[],
     configureLater: false,
+  })
+
+  // Integrated API-backed state
+  const [factoryImagesRemote, setFactoryImagesRemote] = useState<FactoryImage[]>([])
+  const [loadingFactory, setLoadingFactory] = useState(false)
+  type UploadItem = {
+    id: string
+    name: string
+    file: File
+    progress: number
+    status: 'queued' | 'uploading' | 'done' | 'error' | 'canceled'
+    controller: AbortController
+    previewUrl: string
+    errorMessage?: string
+  }
+  const [uploading, setUploading] = useState<UploadItem[]>([])
+  const [certificatesRemote, setCertificatesRemote] = useState<CertificateItem[]>([])
+  const [certificatesMeta, setCertificatesMeta] = useState<PaginatedResponse<CertificateItem>["meta"] | null>(null)
+  const [certificatesLinks, setCertificatesLinks] = useState<PaginatedResponse<CertificateItem>["links"] | null>(null)
+  const [certificatesPage, setCertificatesPage] = useState<number>(1)
+  const [loadingCertificates, setLoadingCertificates] = useState(false)
+
+  // Certificate dialog state
+  const [certDialogOpen, setCertDialogOpen] = useState(false)
+  const [savingCert, setSavingCert] = useState(false)
+  const [certError, setCertError] = useState<string | null>(null)
+  const [certForm, setCertForm] = useState<{ typeId: string; issuedAt: string; expiresAt: string; files: File[] }>({
+    typeId: "",
+    issuedAt: "",
+    expiresAt: "",
+    files: [],
   })
 
   // Fetch company data on component mount and prefill forms
@@ -159,6 +185,50 @@ export default function OnboardingPage() {
 
     loadCompanyData()
   }, [company, fetchCompany])
+
+  // Load existing factory images and certificates from API
+  useEffect(() => {
+    const loadFactory = async () => {
+      setLoadingFactory(true)
+      try {
+        const list = await factoryMediaApi.list()
+        setFactoryImagesRemote(list)
+      } catch (e) {
+        console.error("Failed to load factory images", e)
+      } finally {
+        setLoadingFactory(false)
+      }
+    }
+    const loadCertificates = async (page = 1) => {
+      setLoadingCertificates(true)
+      try {
+        const resp = await certificatesApi.list(page)
+        setCertificatesRemote(resp.data)
+        setCertificatesMeta(resp.meta)
+        setCertificatesLinks(resp.links)
+        setCertificatesPage(resp.meta?.current_page || page)
+        // Gate: if data present, mark certificates as complete
+        if ((resp.data?.length || 0) > 0) {
+          setCompletionStatus((prev) => ({ ...prev, certificates: true }))
+          const current = authData.completionStatus || {
+            profile_completed: false,
+            shipping_configured: false,
+            certificates_uploaded: false,
+            first_product_added: false,
+          }
+          if (!current.certificates_uploaded) {
+            updateAuthData({ completionStatus: { ...current, certificates_uploaded: true } })
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load certificates", e)
+      } finally {
+        setLoadingCertificates(false)
+      }
+    }
+    loadFactory()
+    loadCertificates(1)
+  }, [])
 
   // Sync completion status from session
   useEffect(() => {
@@ -260,7 +330,157 @@ export default function OnboardingPage() {
     const validFiles = files
       .filter((file) => file.type.startsWith("image/") && file.size <= 10 * 1024 * 1024)
       .slice(0, 10)
-    setFactoryImages((prev) => [...prev, ...validFiles].slice(0, 10))
+    if (validFiles.length === 0) return
+  
+    ;(async () => {
+      try {
+        setLoadingFactory(true)
+        
+        // Prepare upload queue with controllers + previews
+        const items: UploadItem[] = validFiles.map((f) => ({
+          id: `${f.name}-${f.size}-${f.lastModified}-${Math.random().toString(36).slice(2)}`,
+          name: f.name,
+          file: f,
+          progress: 0,
+          status: 'queued',
+          controller: new AbortController(),
+          previewUrl: URL.createObjectURL(f),
+        }))
+        setUploading(items)
+  
+        const CONCURRENCY = 2
+        let nextIndex = 0
+        const uploadedImages: FactoryImage[] = [] // Track successful uploads
+        const failedUploads: string[] = [] // Track failed uploads
+  
+        const runNext = async (): Promise<void> => {
+          const idx = nextIndex++
+          if (idx >= items.length) return
+          const item = items[idx]
+          
+          // Set uploading state
+          setUploading((prev) => prev.map((u) => (u.id === item.id ? { ...u, status: 'uploading', progress: 0 } : u)))
+          
+          try {
+            // Upload single file and get immediate response
+            const result = await factoryMediaApi.update(
+              { add: [item.file] },
+              {
+                signal: item.controller.signal,
+                onUploadProgress: (e: any) => {
+                  const total = e?.total || 0
+                  const loaded = e?.loaded || 0
+                  const pct = total > 0 ? Math.round((loaded / total) * 100) : 0
+                  setUploading((prev) => prev.map((u) => (u.id === item.id ? { ...u, progress: pct } : u)))
+                },
+              }
+            )
+            
+            // Add successful upload to our collection
+            if (result && result.length > 0) {
+              // The API returns the complete updated list, not just the new image
+              // Find the newly uploaded image by comparing with previous state
+              const newImages = result.filter(img => 
+                !factoryImagesRemote.some(existing => existing.id === img.id) &&
+                !uploadedImages.some(existing => existing.id === img.id)
+              )
+              
+              if (newImages.length > 0) {
+                const newImage = newImages[0] // Take the first new image
+                uploadedImages.push(newImage)
+                // Update the gallery with the complete result from API
+                setFactoryImagesRemote(result)
+              }
+            }
+            
+            // Mark as done
+            setUploading((prev) => prev.map((u) => (u.id === item.id ? { ...u, status: 'done', progress: 100 } : u)))
+            
+          } catch (e: any) {
+            const isAbort = e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED' || e?.message?.includes('canceled')
+            const status: UploadItem['status'] = isAbort ? 'canceled' : 'error'
+            let errorMessage = ''
+            
+            if (!isAbort) {
+              failedUploads.push(item.name)
+              const data = e?.response?.data
+              if (data) {
+                if (typeof data === 'string') errorMessage = data
+                else if (typeof data?.message === 'string') errorMessage = data.message
+                else if (data?.errors) {
+                  const firstKey = Object.keys(data.errors)[0]
+                  const firstMsg = Array.isArray(data.errors[firstKey]) ? data.errors[firstKey][0] : String(data.errors[firstKey])
+                  errorMessage = firstMsg
+                }
+              } else if (e?.message) {
+                errorMessage = e.message
+              }
+            }
+            
+            setUploading((prev) => prev.map((u) => (u.id === item.id ? { ...u, status, errorMessage } : u)))
+          } finally {
+            // Only revoke preview URL for failed/canceled uploads immediately
+            const currentStatus = (prev => prev.find(u => u.id === item.id)?.status)(uploading)
+            if (currentStatus === 'error' || currentStatus === 'canceled') {
+              URL.revokeObjectURL(item.previewUrl)
+            }
+            // Schedule another
+            await runNext()
+          }
+        }
+  
+        // Kick off workers
+        const workers = Array.from({ length: Math.min(CONCURRENCY, items.length) }, () => runNext())
+        await Promise.all(workers)
+  
+        // Show success message if any uploads completed successfully
+        if (uploadedImages.length > 0) {
+          toast({ 
+            title: "Upload complete", 
+            description: `Successfully uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''}.`
+          })
+        }
+        
+        // Show error summary if any uploads failed
+        if (failedUploads.length > 0) {
+          toast({
+            title: "Some uploads failed",
+            description: `${failedUploads.length} image${failedUploads.length > 1 ? 's' : ''} could not be uploaded: ${failedUploads.join(', ')}`,
+            variant: "destructive"
+          })
+        }
+        
+      } catch (e: any) {
+        console.error("Upload process failed", e)
+        let desc = "Could not upload images."
+        const data = e?.response?.data
+        if (data) {
+          if (typeof data === "string") desc = data
+          else if (typeof data?.message === "string") desc = data.message
+          else if (data?.errors) {
+            const firstKey = Object.keys(data.errors)[0]
+            const firstMsg = Array.isArray(data.errors[firstKey]) ? data.errors[firstKey][0] : String(data.errors[firstKey])
+            desc = firstMsg || desc
+          }
+        } else if (e?.message) {
+          desc = e.message
+        }
+        toast({ title: "Upload failed", description: desc, variant: "destructive" })
+      } finally {
+        setLoadingFactory(false)
+        // Clean up preview URLs for all completed uploads before clearing
+        uploading.forEach(item => {
+          try {
+            URL.revokeObjectURL(item.previewUrl)
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+        })
+        setUploading([])
+        // Clear the file input
+        if (event.target) event.target.value = ""
+      }
+    })()
   }
 
   const removeFactoryImage = (index: number) => {
@@ -281,8 +501,33 @@ export default function OnboardingPage() {
     try {
       if (stepId === "business_profile") {
         await handleBusinessProfileSave()
+      } else if (stepId === "factory_images") {
+        if (factoryImagesRemote.length === 0) {
+          toast({ title: "No images", description: "Please upload at least one factory image or skip.", variant: "destructive" })
+          setIsLoading(false)
+          return
+        }
+      } else if (stepId === "certificates") {
+        if (certificatesRemote.length === 0) {
+          // Optional step; inform user but allow continue
+          toast({ title: "Certificates optional", description: "You can add certificates later from the dashboard." })
+        }
       }
-      setCompletionStatus((prev) => ({ ...prev, [stepId]: true }))
+      // Mark step complete and advance to the next step
+      setCompletionStatus((prev) => {
+        const updated = { ...prev, [stepId]: true }
+
+        // Find next incomplete step after currentStep
+        const nextIndex = steps.findIndex((s, idx) => idx > currentStep && !updated[s.id as keyof CompletionStatus])
+        if (nextIndex !== -1) {
+          setCurrentStep(nextIndex)
+        } else if (currentStep < steps.length - 1) {
+          // Otherwise just advance to the next index if available
+          setCurrentStep(currentStep + 1)
+        }
+
+        return updated
+      })
     } catch (error) {
       console.error("Failed to complete step:", error)
     } finally {
@@ -356,552 +601,102 @@ export default function OnboardingPage() {
     switch (step.id) {
       case "business_profile":
         return (
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Left Column */}
-            <div className="space-y-6">
-              <div>
-                <Label className="text-base font-medium text-gray-900">Company logo</Label>
-                <div className="mt-2">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors">
-                    {(businessProfile.logo || businessProfile.existingLogoUrl) ? (
-                      <div className="space-y-4">
-                        <div className="w-20 h-20 mx-auto rounded-lg overflow-hidden bg-white shadow-sm">
-                          <Image
-                            src={
-                              businessProfile.logo 
-                                ? URL.createObjectURL(businessProfile.logo) 
-                                : businessProfile.existingLogoUrl || "/placeholder.svg"
-                            }
-                            alt="Company logo"
-                            width={80}
-                            height={80}
-                            className="object-contain"
-                          />
-                        </div>
-                        <div className="flex gap-2 justify-center">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => document.getElementById("logo-upload")?.click()}
-                          >
-                            {businessProfile.logo ? "Replace" : "Change Logo"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleLogoRemove}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                        {businessProfile.existingLogoUrl && !businessProfile.logo && (
-                          <p className="text-xs text-gray-500">
-                            Current logo from your company profile
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <Upload className="h-12 w-12 mx-auto text-gray-400" />
-                        <div>
-                          <Button onClick={() => document.getElementById("logo-upload")?.click()}>Upload Logo</Button>
-                          <p className="text-sm text-gray-500 mt-2">PNG/JPG, ≤ 2 MB</p>
-                        </div>
-                      </div>
-                    )}
-                    <input
-                      id="logo-upload"
-                      type="file"
-                      accept="image/png,image/jpeg"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="company-name" className="text-base font-medium text-gray-900">
-                  Company name
-                </Label>
-                <Input
-                  id="company-name"
-                  placeholder="e.g., Adelbaba Manufacturing Co."
-                  value={businessProfile.companyName}
-                  onChange={(e) => setBusinessProfile((prev) => ({ ...prev, companyName: e.target.value }))}
-                  className="mt-2"
-                />
-                <p className="text-sm text-gray-500 mt-1">2–120 characters</p>
-              </div>
-
-              <div>
-                <Label htmlFor="founded-year" className="text-base font-medium text-gray-900">
-                  Founded year (optional)
-                </Label>
-                <Input
-                  id="founded-year"
-                  type="number"
-                  placeholder="e.g., 2015"
-                  value={businessProfile.foundedYear}
-                  onChange={(e) => setBusinessProfile((prev) => ({ ...prev, foundedYear: e.target.value }))}
-                  className="mt-2"
-                  min="1900"
-                  max={new Date().getFullYear()}
-                />
-                <p className="text-sm text-gray-500 mt-1">1900 to current year</p>
-              </div>
-
-              <div>
-                <Label htmlFor="description" className="text-base font-medium text-gray-900">
-                  Company description (optional)
-                </Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe what you make"
-                  value={businessProfile.description}
-                  onChange={(e) => setBusinessProfile((prev) => ({ ...prev, description: e.target.value }))}
-                  className="mt-2"
-                  maxLength={500}
-                />
-                <p className="text-sm text-gray-500 mt-1">Max 500 characters</p>
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Primary contact</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="full-name" className="text-base font-medium text-gray-900">
-                      Full name
-                    </Label>
-                    <Input
-                      id="full-name"
-                      placeholder="e.g., Fatma Ali"
-                      value={businessProfile.primaryContact.fullName}
-                      onChange={(e) =>
-                        setBusinessProfile((prev) => ({
-                          ...prev,
-                          primaryContact: { ...prev.primaryContact, fullName: e.target.value },
-                        }))
-                      }
-                      className="mt-2"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone" className="text-base font-medium text-gray-900">
-                      Phone
-                    </Label>
-                    <Input
-                      id="phone"
-                      placeholder="e.g., +20 10 1234 5678"
-                      value={businessProfile.primaryContact.phone}
-                      onChange={(e) =>
-                        setBusinessProfile((prev) => ({
-                          ...prev,
-                          primaryContact: { ...prev.primaryContact, phone: e.target.value },
-                        }))
-                      }
-                      className="mt-2"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">Digits, +, spaces and dashes are allowed</p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email" className="text-base font-medium text-gray-900">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="e.g., supplier@company.com"
-                      value={businessProfile.primaryContact.email}
-                      onChange={(e) =>
-                        setBusinessProfile((prev) => ({
-                          ...prev,
-                          primaryContact: { ...prev.primaryContact, email: e.target.value },
-                        }))
-                      }
-                      className="mt-2"
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="make-primary"
-                      checked={businessProfile.primaryContact.isPrimary}
-                      onCheckedChange={(checked) =>
-                        setBusinessProfile((prev) => ({
-                          ...prev,
-                          primaryContact: { ...prev.primaryContact, isPrimary: checked },
-                        }))
-                      }
-                    />
-                    <Label htmlFor="make-primary" className="text-sm font-medium text-gray-900">
-                      Make primary
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Secondary Contact */}
-              <div>
-                {!businessProfile.secondaryContact.show ? (
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      setBusinessProfile((prev) => ({
-                        ...prev,
-                        secondaryContact: { ...prev.secondaryContact, show: true },
-                      }))
-                    }
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add secondary contact
-                  </Button>
-                ) : (
-                  <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-medium text-gray-900">Secondary contact</h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setBusinessProfile((prev) => ({
-                            ...prev,
-                            secondaryContact: { phone: "", email: "", show: false },
-                          }))
-                        }
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="secondary-phone" className="text-sm font-medium text-gray-900">
-                        Phone
-                      </Label>
-                      <Input
-                        id="secondary-phone"
-                        placeholder="e.g., +20 10 1234 5678"
-                        value={businessProfile.secondaryContact.phone}
-                        onChange={(e) =>
-                          setBusinessProfile((prev) => ({
-                            ...prev,
-                            secondaryContact: { ...prev.secondaryContact, phone: e.target.value },
-                          }))
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="secondary-email" className="text-sm font-medium text-gray-900">
-                        Email
-                      </Label>
-                      <Input
-                        id="secondary-email"
-                        type="email"
-                        placeholder="e.g., contact@company.com"
-                        value={businessProfile.secondaryContact.email}
-                        onChange={(e) =>
-                          setBusinessProfile((prev) => ({
-                            ...prev,
-                            secondaryContact: { ...prev.secondaryContact, email: e.target.value },
-                          }))
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <BusinessProfileStep
+            businessProfile={businessProfile}
+            setBusinessProfile={setBusinessProfile}
+            onLogoUpload={handleLogoUpload}
+            onLogoRemove={handleLogoRemove}
+          />
         )
 
       case "factory_images":
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2 text-gray-900">Factory Images</h3>
-              <p className="text-gray-600">Upload authentic production photos to build buyer confidence</p>
-            </div>
-
-            {factoryImages.length === 0 ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-orange-400 transition-colors">
-                <Camera className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No images yet</h4>
-                <p className="text-gray-600 mb-4">Add images to showcase your factory and production capabilities</p>
-                <Button onClick={() => document.getElementById("factory-upload")?.click()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Images
-                </Button>
-                <input
-                  id="factory-upload"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFactoryImagesUpload}
-                  className="hidden"
-                />
-                <p className="text-sm text-gray-500 mt-4">JPEG/PNG/WebP, ≤ 10 MB each, up to 10 images</p>
-              </div>
-            ) : (
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <p className="text-sm text-gray-600">{factoryImages.length} of 10 images uploaded</p>
-                  <Button
-                    variant="outline"
-                    onClick={() => document.getElementById("factory-upload")?.click()}
-                    disabled={factoryImages.length >= 10}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add More
-                  </Button>
-                  <input
-                    id="factory-upload"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleFactoryImagesUpload}
-                    className="hidden"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {factoryImages.map((file, index) => (
-                    <div key={index} className="relative group">
-                      <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                        <Image
-                          src={URL.createObjectURL(file) || "/placeholder.svg"}
-                          alt={`Factory image ${index + 1}`}
-                          width={200}
-                          height={200}
-                          className="object-cover w-full h-full"
-                        />
-                      </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeFactoryImage(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                        {file.name}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <FactoryImagesStep
+            factoryImages={factoryImagesRemote as any}
+            uploading={uploading as any}
+            loading={loadingFactory}
+            onFileInputChange={handleFactoryImagesUpload}
+            onRemoveOrCancel={async (img: any) => {
+              if (img.__temp) {
+                const u = uploading.find((x) => x.id === img.id)
+                if (!u) return
+                try {
+                  u.controller.abort()
+                  setUploading((prev) => prev.map((it) => (it.id === u.id ? { ...it, status: 'canceled' } : it)))
+                  URL.revokeObjectURL(u.previewUrl)
+                } catch {}
+                return
+              }
+              try {
+                setLoadingFactory(true)
+                await factoryMediaApi.remove([img.id])
+                const list = await factoryMediaApi.list()
+                setFactoryImagesRemote(list)
+                toast({ title: 'Removed', description: 'Image removed from factory gallery.' })
+              } catch (e: any) {
+                console.error('Remove failed', e)
+                let desc = 'Could not remove image.'
+                const data = e?.response?.data
+                if (data) {
+                  if (typeof data === 'string') desc = data
+                  else if (typeof data?.message === 'string') desc = data.message
+                  else if (data?.errors) {
+                    const firstKey = Object.keys(data.errors)[0]
+                    const firstMsg = Array.isArray(data.errors[firstKey]) ? data.errors[firstKey][0] : String(data.errors[firstKey])
+                    desc = firstMsg || desc
+                  }
+                } else if (e?.message) {
+                  desc = e.message
+                }
+                toast({ title: 'Remove failed', description: desc, variant: 'destructive' })
+              } finally {
+                setLoadingFactory(false)
+              }
+            }}
+          />
         )
 
       case "certificates":
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2 text-gray-900">Certificates</h3>
-              <p className="text-gray-600">Upload compliance and quality documents</p>
-            </div>
-
-            {certificates.length === 0 ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-orange-400 transition-colors">
-                <FileText className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No certificates yet</h4>
-                <p className="text-gray-600 mb-4">Add certificates to build trust with buyers</p>
-                <Button
-                  onClick={() => {
-                    /* Open certificate modal */
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Certificate
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-sm text-gray-600">{certificates.length} certificates uploaded</p>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      /* Open certificate modal */
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Certificate
-                  </Button>
-                </div>
-
-                <div className="space-y-3">
-                  {certificates.map((cert) => (
-                    <Card key={cert.id} className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{cert.name}</h4>
-                          <p className="text-sm text-gray-600">{cert.type}</p>
-                          <div className="flex gap-4 text-xs text-gray-500 mt-1">
-                            <span>Issued: {cert.issuedAt}</span>
-                            <span>Expires: {cert.expiresAt}</span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => removeCertificate(cert.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <CertificatesStep
+            items={certificatesRemote}
+            meta={certificatesMeta}
+            links={certificatesLinks}
+            onRefresh={async (page?: number) => {
+              const p = page || 1
+              const resp = await certificatesApi.list(p)
+              setCertificatesRemote(resp.data)
+              setCertificatesMeta(resp.meta)
+              setCertificatesLinks(resp.links)
+              setCertificatesPage(resp.meta?.current_page || p)
+            }}
+            onMarkUploaded={() => {
+              setCompletionStatus((prev) => ({ ...prev, certificates: true }))
+              const current = authData.completionStatus || {
+                profile_completed: false,
+                shipping_configured: false,
+                certificates_uploaded: false,
+                first_product_added: false,
+              }
+              updateAuthData({ completionStatus: { ...current, certificates_uploaded: true } })
+            }}
+          />
         )
 
       case "shipping_configuration":
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h3 className="text-lg font-semibold mb-2 text-gray-900">Shipping Configuration</h3>
-              <p className="text-gray-600">Configure your shipping preferences and partners</p>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <Label className="text-base font-medium text-gray-900">Preferred shipping partners (optional)</Label>
-                <div className="grid gap-3 mt-3">
-                  {shippingCompanies.map((company) => (
-                    <Card
-                      key={company.id}
-                      className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
-                        selectedShipping.includes(company.id)
-                          ? "ring-2 ring-orange-600 bg-orange-50 shadow-lg"
-                          : "hover:border-orange-300"
-                      }`}
-                      onClick={() => {
-                        setSelectedShipping((prev) =>
-                          prev.includes(company.id) ? prev.filter((id) => id !== company.id) : [...prev, company.id],
-                        )
-                      }}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                          <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-white shadow-sm">
-                            <Image
-                              src={company.logo || "/placeholder.svg"}
-                              alt={`${company.name} logo`}
-                              fill
-                              className="object-contain p-1"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900">{company.name}</h4>
-                            <p className="text-sm text-gray-600">{company.description}</p>
-                          </div>
-                          <div
-                            className={`transition-all duration-300 ${
-                              selectedShipping.includes(company.id) ? "scale-100 opacity-100" : "scale-0 opacity-0"
-                            }`}
-                          >
-                            <CheckCircle className="h-5 w-5 text-orange-600" />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="handling-time" className="text-base font-medium text-gray-900">
-                    Handling time
-                  </Label>
-                  <Select
-                    value={shippingConfig.handlingTime}
-                    onValueChange={(value) => setShippingConfig((prev) => ({ ...prev, handlingTime: value }))}
-                  >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select handling time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1-3">1–3 days</SelectItem>
-                      <SelectItem value="3-7">3–7 days</SelectItem>
-                      <SelectItem value="7+">More than 7 days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="ships-from" className="text-base font-medium text-gray-900">
-                    Ships from
-                  </Label>
-                  <Input
-                    id="ships-from"
-                    placeholder="Country/City"
-                    value={shippingConfig.shipsFrom}
-                    onChange={(e) => setShippingConfig((prev) => ({ ...prev, shipsFrom: e.target.value }))}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                <Checkbox
-                  id="configure-later"
-                  checked={shippingConfig.configureLater}
-                  onCheckedChange={(checked) =>
-                    setShippingConfig((prev) => ({ ...prev, configureLater: checked as boolean }))
-                  }
-                />
-                <Label htmlFor="configure-later" className="text-sm font-medium text-gray-900">
-                  I will configure shipping settings later
-                </Label>
-              </div>
-
-              {shippingConfig.configureLater && (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    ⚠️ You can complete onboarding now and configure shipping settings from your dashboard later.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+          <ShippingConfigurationStep
+            shippingCompanies={shippingCompanies}
+            selectedShipping={selectedShipping}
+            setSelectedShipping={setSelectedShipping}
+            shippingConfig={shippingConfig}
+            setShippingConfig={setShippingConfig}
+          />
         )
 
       case "first_product":
         return (
-          <div className="text-center space-y-6">
-            <div>
-              <Package className="h-16 w-16 mx-auto text-orange-600 mb-4" />
-              <h3 className="text-lg font-semibold mb-2 text-gray-900">Add Your First Product</h3>
-              <p className="text-gray-600 mb-6">Add a clear title, images, and minimum order to start selling</p>
-            </div>
-
-            <div className="max-w-md mx-auto">
-              <Button size="lg" className="w-full bg-orange-600 hover:bg-orange-700">
-                <Plus className="h-5 w-5 mr-2" />
-                Add Product
-              </Button>
-              <p className="text-sm text-gray-500 mt-3">This will take you to the product creation page</p>
-            </div>
-          </div>
+          <FirstProductStep />
         )
 
       default:
@@ -1006,18 +801,15 @@ export default function OnboardingPage() {
                         variant="outline"
                         size="sm"
                         onClick={async () => {
-                          const loadProfile = async () => {
-                            setProfileLoading(true)
-                            setProfileError(null)
-                            try {
-                              await apiClient.get("/v1/profile")
-                            } catch (error) {
-                              setProfileError("Failed to load profile data. You can still fill out the form manually.")
-                            } finally {
-                              setProfileLoading(false)
-                            }
+                          setProfileLoading(true)
+                          setProfileError(null)
+                          try {
+                            await fetchCompany()
+                          } catch (error) {
+                            setProfileError("Failed to load profile data. You can still fill out the form manually.")
+                          } finally {
+                            setProfileLoading(false)
                           }
-                          await loadProfile()
                         }}
                         disabled={profileLoading}
                       >

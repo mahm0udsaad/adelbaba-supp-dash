@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useSession } from "next-auth/react"
+import { needsOnboarding } from "@/src/utils/auth-utils"
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -34,13 +35,9 @@ export function AuthGuard({ children, fallback, requireOnboarding = false }: Aut
 
     if (requireOnboarding) {
       const isOwner = roles.includes("Owner")
-      const needsOnboarding = isOwner && (
-        !completionStatus?.profile_completed ||
-        !completionStatus?.shipping_configured ||
-        !completionStatus?.certificates_uploaded
-      )
-      
-      if (needsOnboarding) {
+      const shouldOnboard = isOwner && needsOnboarding(completionStatus)
+
+      if (shouldOnboard) {
         setRedirecting(true)
         router.push("/onboarding")
         return
