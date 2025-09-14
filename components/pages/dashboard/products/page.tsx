@@ -1,70 +1,67 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useI18n } from "@/lib/i18n/context"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Plus, CheckCircle, Edit, Archive, Package } from "lucide-react"
+import { Plus, CheckCircle, Edit, Archive, Package, XCircle } from "lucide-react"
 import { FiltersCard } from "./components/FiltersCard"
 import { StatsCards } from "./components/StatsCards"
 import { ProductCard } from "./components/ProductCard"
-import type { Product, ProductFiltersState } from "./components/types"
-import { useMockData } from "@/lib/mock-data-context"
+import type { ProductListItem } from "@/src/services/types/product-types"
+import { listProducts } from "@/src/services/products-api"
+import { useApiWithFallback } from "@/hooks/useApiWithFallback"
+
+// Note: The mock 'Product' type had a 'status' field which is not in the API's 'ProductListItem'.
+// We will derive a status from the 'is_active' boolean field.
+// The filter state needs to be updated to reflect this.
+type ProductFiltersState = {
+  search: string
+  status: "all" | "active" | "inactive"
+  category: string | "all"
+}
 
 export default function ProductsPage() {
   const [filters, setFilters] = useState<ProductFiltersState>({ search: "", status: "all", category: "all" })
   const { t, isArabic } = useI18n()
-  const { products: allProducts } = useMockData()
+
+  const fetcher = useCallback(() => listProducts({ q: filters.search }).then(res => res.data), [filters.search]);
+  const fallback = useCallback(async () => [], []);
+
+  const { data: allProducts, loading, refetch } = useApiWithFallback({
+    fetcher,
+    fallback,
+    deps: [filters.search],
+  })
 
   const products = useMemo(() => {
-    let filtered = [...(allProducts as Product[])]
-    if (filters.status !== "all") filtered = filtered.filter((p) => p.status === filters.status)
-    if (filters.category !== "all") filtered = filtered.filter((p) => p.categoryId === filters.category)
+    if (!allProducts) return []
+    let filtered = [...allProducts]
+    if (filters.status !== "all") {
+      const isActive = filters.status === "active"
+      filtered = filtered.filter((p) => p.is_active === isActive)
+    }
+    if (filters.category !== "all") {
+      filtered = filtered.filter((p) => p.category.id.toString() === filters.category)
+    }
+    // The API handles search, but we can do client-side filtering as a fallback or for refinement
     if (filters.search) {
       const searchLower = filters.search.toLowerCase()
       filtered = filtered.filter(
         (p) =>
-          p.title.toLowerCase().includes(searchLower) ||
-          p.sku.toLowerCase().includes(searchLower) ||
-          p.description.toLowerCase().includes(searchLower) ||
-          p.tags.some((tag) => tag.toLowerCase().includes(searchLower)),
+          p.name.toLowerCase().includes(searchLower) ||
+          p.description.toLowerCase().includes(searchLower)
       )
     }
     return filtered
-  }, [allProducts, filters])
+  }, [allProducts, filters.status, filters.category, filters.search])
 
-  const loading = false
-  const refetch = () => Promise.resolve()
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <CheckCircle className="h-4 w-4" />
-      case "draft":
-        return <Edit className="h-4 w-4" />
-      case "archived":
-        return <Archive className="h-4 w-4" />
-      default:
-        return <Package className="h-4 w-4" />
-    }
+  const getStatusIcon = (isActive: boolean) => {
+    return isActive ? <CheckCircle className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />
   }
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "active":
-        return t.active
-      case "draft":
-        return t.draft
-      case "archived":
-        return t.archived
-      default:
-        return status
-    }
-  }
-
-  const getLowestPrice = (pricingTiers: Product["pricingTiers"]) => {
-    if (!pricingTiers || pricingTiers.length === 0) return 0
-    return Math.min(...pricingTiers.map((tier) => tier.unitPrice))
+  const getStatusLabel = (isActive: boolean) => {
+    return isActive ? t.active : t.inactive
   }
 
   return (
@@ -94,26 +91,27 @@ export default function ProductsPage() {
         ) : !products || products.length === 0 ? (
           <div className="col-span-full">
             <div className="flex flex-col items-center justify-center py-8 border rounded-lg">
-                <Package className="h-12 w-12 text-muted-foreground mb-4" />
+              <Package className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium text-muted-foreground">{t.noProductsFound}</h3>
               <p className="text-sm text-muted-foreground mb-4">{t.tryAdjustingSearchOrAdd}</p>
-                <Link href="/dashboard/products/new">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t.addProduct}
-                  </Button>
-                </Link>
+              <Link href="/dashboard/products/new">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t.addProduct}
+                </Button>
+              </Link>
             </div>
           </div>
         ) : (
-          products.map((product) => (
+          products.map((product: ProductListItem) => (
             <ProductCard
               key={product.id}
               product={product}
               isArabic={isArabic}
-              getStatusIcon={getStatusIcon}
-              getStatusLabel={getStatusLabel}
-              getLowestPrice={getLowestPrice}
+              getStatusIcon={() => getStatusIcon(product.is_active)}
+              getStatusLabel={() => getStatusLabel(product.is_active)}
+              getLowestPrice={() => product.shown_price} // Use shown_price directly
+              onProductDeleted={refetch}
             />
           ))
         )}

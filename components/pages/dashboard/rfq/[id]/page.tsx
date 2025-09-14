@@ -36,6 +36,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "@/hooks/use-toast"
+import { createQuote } from "@/src/services/quotes-api"
 
 interface RFQ {
   id: string
@@ -192,6 +193,7 @@ export default function RFQDetailPage() {
   const [language] = useState<"en" | "ar">("en")
 
   const [quoteForm, setQuoteForm] = useState({
+    message: "",
     unitPrice: "",
     currency: "USD",
     moq: "",
@@ -200,6 +202,7 @@ export default function RFQDetailPage() {
     paymentTerms: "",
     deliveryTerms: "",
     notes: "",
+    attachments: [] as File[],
   })
 
   const isArabic = language === "ar"
@@ -241,8 +244,13 @@ export default function RFQDetailPage() {
     setSubmitting(true)
 
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await createQuote({
+        rfq_id: String(params.id),
+        message: quoteForm.message,
+        currency: quoteForm.currency,
+        lead_time_days: quoteForm.leadTimeDays ? Number(quoteForm.leadTimeDays) : undefined,
+        attachments: quoteForm.attachments,
+      })
 
       toast({
         title: isArabic ? "تم إرسال العرض" : "Quote Submitted",
@@ -326,6 +334,17 @@ export default function RFQDetailPage() {
               </DialogHeader>
 
               <form onSubmit={handleSubmitQuote} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="message">{isArabic ? "رسالة" : "Message"} *</Label>
+                  <Textarea
+                    id="message"
+                    placeholder={isArabic ? "رسالتك إلى المشتري" : "Your message to the buyer"}
+                    value={quoteForm.message}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, message: e.target.value })}
+                    required
+                    rows={3}
+                  />
+                </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="unitPrice">{isArabic ? "سعر الوحدة" : "Unit Price"} *</Label>
@@ -336,7 +355,6 @@ export default function RFQDetailPage() {
                       placeholder="0.00"
                       value={quoteForm.unitPrice}
                       onChange={(e) => setQuoteForm({ ...quoteForm, unitPrice: e.target.value })}
-                      required
                     />
                   </div>
 
@@ -348,19 +366,28 @@ export default function RFQDetailPage() {
                       placeholder="100"
                       value={quoteForm.moq}
                       onChange={(e) => setQuoteForm({ ...quoteForm, moq: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">{isArabic ? "العملة" : "Currency"} *</Label>
+                    <Input
+                      id="currency"
+                      placeholder="USD"
+                      value={quoteForm.currency}
+                      onChange={(e) => setQuoteForm({ ...quoteForm, currency: e.target.value })}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="leadTimeDays">{isArabic ? "مدة التسليم (أيام)" : "Lead Time (Days)"} *</Label>
+                    <Label htmlFor="leadTimeDays">{isArabic ? "مدة التسليم (أيام)" : "Lead Time (Days)"}</Label>
                     <Input
                       id="leadTimeDays"
                       type="number"
                       placeholder="30"
                       value={quoteForm.leadTimeDays}
                       onChange={(e) => setQuoteForm({ ...quoteForm, leadTimeDays: e.target.value })}
-                      required
                     />
                   </div>
 
@@ -405,6 +432,23 @@ export default function RFQDetailPage() {
                     onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })}
                     rows={3}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="attachments">{isArabic ? "المرفقات" : "Attachments"}</Label>
+                  <Input
+                    id="attachments"
+                    type="file"
+                    multiple
+                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || [])
+                      setQuoteForm({ ...quoteForm, attachments: files as File[] })
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {isArabic ? "الأنواع المدعومة: jpg, png, pdf, doc, docx, xls, xlsx" : "Supported types: jpg, png, pdf, doc, docx, xls, xlsx"}
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-2">

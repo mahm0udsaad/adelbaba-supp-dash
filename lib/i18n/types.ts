@@ -33,6 +33,8 @@ export interface TranslationKeys {
   category: string
   download: string
   verify: string
+  yes: string
+  no: string
 
   // Orders
   totalOrders: string
@@ -215,8 +217,6 @@ export interface TranslationKeys {
   certificateAdded: string
   certificateAddedDesc: string
   failedToAddCertificate: string
-
-  // Tools errors
   failedToLoadTools: string
 
   // Products
@@ -243,6 +243,53 @@ export interface TranslationKeys {
   private: string
   totalViews: string
   lowStock: string
+  media: string
+  mediaRequiredError: string
+  minPrice: string
+  maxPrice: string
+  priceType: string
+  priceRange: string
+  tieredPricing: string
+  perSKUPricing: string
+  productName: string
+  selectCategory: string
+  productIsActive: string
+  productCreated: string
+  productCreatedSuccess: string
+  productCreateFailed: string
+  saving: string
+  saveProduct: string
+  readyToShip: string
+  reviews: string
+  skus: string
+  createNewProductInCatalog: string
+  noMediaAvailable: string
+  seeSkuPricing: string
+  pricingNotAvailable: string
+  noSkusAvailable: string
+  productLoadFailed: string
+  inventory: string
+  productUpdated: string
+  productUpdatedSuccess: string
+  productUpdateFailed: string
+  productSaveFailed: string
+  editProduct: string
+  saveChanges: string
+  dragAndDropOrClick: string
+  browseFiles: string
+  addTier: string
+  minQuantity: string
+  unitPrice: string
+  productVariants: string
+  addAttribute: string
+  attributeNamePlaceholder: string
+  attributeValuePlaceholder: string
+  addValue: string
+  areYouSure: string
+  deleteConfirmationMessage: string
+  productDeleted: string
+  productDeletedSuccess: string
+  productDeleteFailed: string
 
   // Analytics
   revenue: string

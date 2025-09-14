@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, CheckCircle, AlertTriangle, TrendingUp } from "lucide-react"
-import type { Product } from "./types"
+import { Package, CheckCircle, AlertTriangle, Truck } from "lucide-react"
+import type { ProductListItem } from "@/services/types/product-types"
 import { useI18n } from "@/lib/i18n/context"
 
 interface StatsCardsProps {
-  products: Product[]
+  products: ProductListItem[]
 }
 
 export function StatsCards({ products }: StatsCardsProps) {
@@ -27,7 +27,7 @@ export function StatsCards({ products }: StatsCardsProps) {
           <CheckCircle className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{products?.filter((p) => p.status === "active").length || 0}</div>
+          <div className="text-2xl font-bold">{products?.filter((p) => p.is_active).length || 0}</div>
         </CardContent>
       </Card>
 
@@ -37,17 +37,17 @@ export function StatsCards({ products }: StatsCardsProps) {
           <AlertTriangle className="h-4 w-4 text-yellow-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{products?.filter((p) => p.totalStock < 100).length || 0}</div>
+          <div className="text-2xl font-bold">{products?.filter((p) => p.inventory < 100).length || 0}</div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{t.totalViews}</CardTitle>
-          <TrendingUp className="h-4 w-4 text-primary" />
+          <CardTitle className="text-sm font-medium">{t.readyToShip}</CardTitle>
+          <Truck className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{products?.reduce((sum, p) => sum + p.views, 0).toLocaleString() || "0"}</div>
+          <div className="text-2xl font-bold">{products?.filter((p) => p.is_rts).length || 0}</div>
         </CardContent>
       </Card>
     </div>

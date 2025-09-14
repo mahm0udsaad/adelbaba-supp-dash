@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useMockData } from "@/lib/mock-data-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,10 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileText, Search, Filter, Eye, DollarSign, MapPin, Building, Calendar, TrendingUp } from "lucide-react"
 import Link from "next/link"
+import { useApiWithFallback } from "@/hooks/useApiWithFallback"
+import { listQuotes, withdrawQuote } from "@/src/services/quotes-api"
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
+import { toast } from "@/hooks/use-toast"
 
 interface RFQ {
   id: string
@@ -160,6 +164,23 @@ export default function RFQPage() {
 
   const isArabic = language === "ar"
 
+  // Quotes listing (API)
+  const [quotesPage, setQuotesPage] = useState<number>(1)
+  const fetchQuotes = useCallback(() => listQuotes({ page: quotesPage }), [quotesPage])
+  const fallbackQuotes = useCallback(
+    async () => ({
+      data: [],
+      links: {},
+      meta: { current_page: 1, last_page: 1, per_page: 15, total: 0, from: null, to: null },
+    }),
+    []
+  )
+  const { data: quotesResponse, loading: quotesLoading, refetch: refetchQuotes, setData: setQuotesResponse } = useApiWithFallback({
+    fetcher: fetchQuotes,
+    fallback: fallbackQuotes,
+    deps: [quotesPage],
+  })
+
   const filtered = useMemo(() => {
     let filtered = [...(rfqs as RFQ[])]
 
@@ -216,6 +237,114 @@ export default function RFQPage() {
           {isArabic ? "تصفح وقدم عروض أسعار للطلبات المتاحة" : "Browse and submit quotes for available requests"}
         </p>
       </div>
+
+      {/* My Quotes (from API) */}
+      <Card>
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle>{isArabic ? "عروضي" : "My Quotes"}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {quotesLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          ) : !quotesResponse || (Array.isArray(quotesResponse.data) && quotesResponse.data.length === 0) ? (
+            <div className="flex flex-col items-center justify-center py-6">
+              <FileText className="h-10 w-10 text-muted-foreground mb-2" />
+              <div className="text-sm text-muted-foreground">
+                {isArabic ? "لا توجد عروض حتى الآن" : "No quotes yet"}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {/* Quotes list */}
+              <div className="grid gap-3">
+                {quotesResponse.data.map((q: any) => (
+                  <div key={q.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="font-medium">#{q.id}</span>
+                      {q.status && (
+                        <Badge variant="outline">{q.status}</Badge>
+                      )}
+                      {q.currency && (
+                        <span className="text-muted-foreground">{q.currency}</span>
+                      )}
+                      {q.created_at && (
+                        <span className="text-muted-foreground">{new Date(q.created_at).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/dashboard/rfq/${q.rfq_id || ""}`}>
+                        <Button size="sm" variant="outline" className="bg-transparent">
+                          <Eye className="h-4 w-4 mr-2" />
+                          {isArabic ? "عرض الطلب" : "View RFQ"}
+                        </Button>
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={async () => {
+                          try {
+                            await withdrawQuote(q.id)
+                            toast({ title: isArabic ? "تم السحب" : "Withdrawn", description: isArabic ? "تم سحب العرض" : "Quote withdrawn" })
+                            // Optimistic update
+                            setQuotesResponse((prev: any) => {
+                              if (!prev) return prev
+                              const next = { ...prev, data: prev.data.map((it: any) => (it.id === q.id ? { ...it, status: "withdrawn" } : it)) }
+                              return next
+                            })
+                          } catch (err: any) {
+                            toast({ title: isArabic ? "خطأ" : "Error", description: err?.message || (isArabic ? "فشل سحب العرض" : "Failed to withdraw quote"), variant: "destructive" })
+                          }
+                        }}
+                      >
+                        {isArabic ? "سحب" : "Withdraw"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {quotesResponse.meta && quotesResponse.meta.last_page && quotesResponse.meta.last_page > 1 && (
+                <Pagination className="mt-2">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={(e) => {
+                          e.preventDefault()
+                          if ((quotesResponse.meta.current_page || 1) > 1) setQuotesPage((p) => p - 1)
+                        }}
+                        href="#"
+                      />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        {(quotesResponse.meta.from ?? 0) === null && (quotesResponse.meta.to ?? 0) === null
+                          ? isArabic
+                            ? "لا نتائج"
+                            : "No results"
+                          : `${quotesResponse.meta.from ?? 0}-${quotesResponse.meta.to ?? 0} / ${quotesResponse.meta.total ?? 0}`}
+                      </div>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={(e) => {
+                          e.preventDefault()
+                          const current = quotesResponse.meta.current_page || 1
+                          const last = quotesResponse.meta.last_page || 1
+                          if (current < last) setQuotesPage((p) => p + 1)
+                        }}
+                        href="#"
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
