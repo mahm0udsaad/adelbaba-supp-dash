@@ -7,10 +7,10 @@ import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
 import { useI18n } from "@/lib/i18n/context"
 import { toast } from "@/components/ui/use-toast"
-import { getProduct, updateProduct } from "@/services/products-api"
-import { ProductForm } from "../components/ProductForm"
+import { getProduct, updateProduct } from "@/src/services/products-api"
+import { ProductForm } from "../../components/ProductForm"
 import { useApiWithFallback } from "@/hooks/useApiWithFallback"
-import { ProductDetail } from "@/services/types/product-types"
+import { ProductDetail } from "@/src/services/types/product-types"
 
 export default function EditProductPageImpl() {
   const router = useRouter()
