@@ -36,171 +36,62 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "@/hooks/use-toast"
-import { createQuote } from "@/src/services/quotes-api"
+import { getRFQDetails, submitQuote, type RFQ } from "@/src/services/rfq-api"
 
-interface RFQ {
-  id: string
-  title: string
-  buyerCompany: string
-  buyerContact: {
-    name: string
-    email: string
-    phone: string
+// Helper function to normalize API data for display
+const normalizeRFQDetail = (rfq: RFQ): RFQ & {
+  buyerCompany: string;
+  buyerContact: { name: string; email: string; phone: string };
+  specs: Array<{ key: string; value: string }>;
+  targetQty: number;
+  targetPrice: number;
+  paymentTerms: string;
+  deliveryTerms: string;
+  leadTimeRequired: number;
+  expiresAt: string;
+  createdAt: string;
+  attachments: string[];
+  quotesCount: number;
+  viewsCount: number;
+} => {
+  return {
+    ...rfq,
+    buyerCompany: rfq.buyer_company || 'Unknown Company',
+    buyerContact: {
+      name: rfq.buyer_contact?.name || 'Unknown Contact',
+      email: rfq.buyer_contact?.email || '',
+      phone: rfq.buyer_contact?.phone || '',
+    },
+    specs: rfq.specifications || [],
+    targetQty: rfq.target_qty || 0,
+    targetPrice: rfq.target_price || 0,
+    paymentTerms: rfq.payment_terms || 'Not specified',
+    deliveryTerms: rfq.delivery_terms || 'Not specified',
+    leadTimeRequired: rfq.lead_time_required || 0,
+    expiresAt: rfq.expires_at || new Date().toISOString(),
+    createdAt: rfq.created_at || new Date().toISOString(),
+    attachments: rfq.attachments || [],
+    quotesCount: rfq.quotes_count || 0,
+    viewsCount: rfq.views_count || 0,
   }
-  categoryId: string
-  category: string
-  description: string
-  specs: Array<{ key: string; value: string }>
-  targetQty: number
-  targetPrice: number
-  currency: string
-  countryCode: string
-  country: string
-  paymentTerms: string
-  deliveryTerms: string
-  leadTimeRequired: number
-  status: string
-  priority: string
-  expiresAt: string
-  createdAt: string
-  attachments: string[]
-  quotesCount: number
-  viewsCount: number
 }
 
-const MOCK_RFQ_DETAILS = {
-  "rfq-001": {
-    id: "rfq-001",
-    title: "High-Quality Steel Pipes for Construction Project",
-    buyerCompany: "BuildTech Construction Ltd",
-    buyerContact: {
-      name: "Ahmed Hassan",
-      email: "ahmed.hassan@buildtech.com",
-      phone: "+971-50-123-4567",
-    },
-    categoryId: "construction",
-    category: "Construction Materials",
-    description:
-      "We are looking for high-quality steel pipes for a major construction project in Dubai. The pipes will be used for structural support and must meet international quality standards. We need reliable suppliers who can provide consistent quality and timely delivery.",
-    specs: [
-      { key: "Material", value: "Carbon Steel" },
-      { key: "Diameter", value: "50mm - 200mm" },
-      { key: "Wall Thickness", value: "3mm - 8mm" },
-      { key: "Length", value: "6m - 12m" },
-      { key: "Standard", value: "ASTM A53" },
-      { key: "Surface Treatment", value: "Galvanized" },
-    ],
-    targetQty: 5000,
-    targetPrice: 25.5,
-    currency: "USD",
-    countryCode: "AE",
-    country: "United Arab Emirates",
-    paymentTerms: "30% advance, 70% before shipment",
-    deliveryTerms: "FOB Dubai",
-    leadTimeRequired: 45,
-    status: "open",
-    priority: "high",
-    expiresAt: "2024-12-15T23:59:59Z",
-    createdAt: "2024-11-01T10:00:00Z",
-    attachments: ["technical_specs.pdf", "project_drawings.dwg"],
-    quotesCount: 12,
-    viewsCount: 156,
-  },
-  "rfq-002": {
-    id: "rfq-002",
-    title: "Organic Cotton T-Shirts for Fashion Brand",
-    buyerCompany: "EcoFashion International",
-    buyerContact: {
-      name: "Sarah Johnson",
-      email: "sarah@ecofashion.com",
-      phone: "+1-555-0123",
-    },
-    categoryId: "textiles",
-    category: "Textiles & Apparel",
-    description:
-      "Looking for a reliable manufacturer to produce organic cotton t-shirts for our sustainable fashion line. We need high-quality materials and ethical manufacturing practices.",
-    specs: [
-      { key: "Material", value: "100% Organic Cotton" },
-      { key: "Weight", value: "180 GSM" },
-      { key: "Sizes", value: "XS to XXL" },
-      { key: "Colors", value: "White, Black, Navy, Gray" },
-      { key: "Certification", value: "GOTS Certified" },
-      { key: "Printing", value: "Water-based inks only" },
-    ],
-    targetQty: 10000,
-    targetPrice: 8.5,
-    currency: "USD",
-    countryCode: "US",
-    country: "United States",
-    paymentTerms: "50% advance, 50% on delivery",
-    deliveryTerms: "FOB Shanghai",
-    leadTimeRequired: 60,
-    status: "open",
-    priority: "medium",
-    expiresAt: "2024-12-20T23:59:59Z",
-    createdAt: "2024-11-05T14:30:00Z",
-    attachments: ["size_chart.pdf", "color_swatches.jpg"],
-    quotesCount: 8,
-    viewsCount: 89,
-  },
-  "rfq-003": {
-    id: "rfq-003",
-    title: "Industrial LED Lighting Systems",
-    buyerCompany: "MegaFactory Solutions",
-    buyerContact: {
-      name: "Liu Wei",
-      email: "liu.wei@megafactory.cn",
-      phone: "+86-138-0013-8000",
-    },
-    categoryId: "electronics",
-    category: "Electronics & Electrical",
-    description:
-      "Need industrial-grade LED lighting systems for warehouse and factory installations. Must be energy-efficient and have long lifespan.",
-    specs: [
-      { key: "Power", value: "100W - 200W" },
-      { key: "Voltage", value: "AC 85-265V" },
-      { key: "Luminous Flux", value: "≥130 lm/W" },
-      { key: "Color Temperature", value: "5000K - 6500K" },
-      { key: "IP Rating", value: "IP65" },
-      { key: "Lifespan", value: "≥50,000 hours" },
-    ],
-    targetQty: 2000,
-    targetPrice: 45.0,
-    currency: "USD",
-    countryCode: "CN",
-    country: "China",
-    paymentTerms: "T/T 30% advance, 70% before shipment",
-    deliveryTerms: "EXW Guangzhou",
-    leadTimeRequired: 30,
-    status: "open",
-    priority: "high",
-    expiresAt: "2024-12-10T23:59:59Z",
-    createdAt: "2024-10-28T09:15:00Z",
-    attachments: ["installation_guide.pdf"],
-    quotesCount: 15,
-    viewsCount: 203,
-  },
-}
+// Remove mock data - using real API now
 
 export default function RFQDetailPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [rfq, setRfq] = useState<RFQ | null>(null)
+  const [rfq, setRfq] = useState<ReturnType<typeof normalizeRFQDetail> | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [showQuoteDialog, setShowQuoteDialog] = useState(false)
   const [language] = useState<"en" | "ar">("en")
 
   const [quoteForm, setQuoteForm] = useState({
-    message: "",
-    unitPrice: "",
-    currency: "USD",
+    price: "",
     moq: "",
-    leadTimeDays: "",
-    validityDays: "30",
-    paymentTerms: "",
-    deliveryTerms: "",
+    lead_time: "",
     notes: "",
     attachments: [] as File[],
   })
@@ -218,12 +109,11 @@ export default function RFQDetailPage() {
   const fetchRFQ = async () => {
     try {
       setLoading(true)
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      const mockRfq = MOCK_RFQ_DETAILS[params.id as keyof typeof MOCK_RFQ_DETAILS]
-      if (mockRfq) {
-        setRfq(mockRfq)
+      const response = await getRFQDetails(params.id as string)
+      const rfqData = 'data' in response ? response.data : response
+      
+      if (rfqData) {
+        setRfq(normalizeRFQDetail(rfqData))
       } else {
         setRfq(null)
       }
@@ -241,14 +131,26 @@ export default function RFQDetailPage() {
 
   const handleSubmitQuote = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate required fields
+    if (!quoteForm.price) {
+      toast({
+        title: isArabic ? "خطأ" : "Error",
+        description: isArabic ? "السعر مطلوب" : "Price is required",
+        variant: "destructive",
+      })
+      return
+    }
+    
     setSubmitting(true)
 
     try {
-      await createQuote({
+      await submitQuote({
         rfq_id: String(params.id),
-        message: quoteForm.message,
-        currency: quoteForm.currency,
-        lead_time_days: quoteForm.leadTimeDays ? Number(quoteForm.leadTimeDays) : undefined,
+        price: parseFloat(quoteForm.price),
+        moq: quoteForm.moq ? parseInt(quoteForm.moq) : undefined,
+        lead_time: quoteForm.lead_time,
+        notes: quoteForm.notes,
         attachments: quoteForm.attachments,
       })
 
@@ -258,11 +160,20 @@ export default function RFQDetailPage() {
       })
 
       setShowQuoteDialog(false)
+      // Reset form
+      setQuoteForm({
+        price: "",
+        moq: "",
+        lead_time: "",
+        notes: "",
+        attachments: [],
+      })
       router.push("/dashboard/rfq")
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Quote submission error:', error)
       toast({
         title: isArabic ? "خطأ" : "Error",
-        description: isArabic ? "فشل في إرسال العرض" : "Failed to submit quote",
+        description: error?.response?.data?.message || error?.message || (isArabic ? "فشل في إرسال العرض" : "Failed to submit quote"),
         variant: "destructive",
       })
     } finally {
@@ -334,32 +245,22 @@ export default function RFQDetailPage() {
               </DialogHeader>
 
               <form onSubmit={handleSubmitQuote} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="message">{isArabic ? "رسالة" : "Message"} *</Label>
-                  <Textarea
-                    id="message"
-                    placeholder={isArabic ? "رسالتك إلى المشتري" : "Your message to the buyer"}
-                    value={quoteForm.message}
-                    onChange={(e) => setQuoteForm({ ...quoteForm, message: e.target.value })}
-                    required
-                    rows={3}
-                  />
-                </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="unitPrice">{isArabic ? "سعر الوحدة" : "Unit Price"} *</Label>
+                    <Label htmlFor="price">{isArabic ? "سعر الوحدة" : "Unit Price"} *</Label>
                     <Input
-                      id="unitPrice"
+                      id="price"
                       type="number"
                       step="0.01"
                       placeholder="0.00"
-                      value={quoteForm.unitPrice}
-                      onChange={(e) => setQuoteForm({ ...quoteForm, unitPrice: e.target.value })}
+                      value={quoteForm.price}
+                      onChange={(e) => setQuoteForm({ ...quoteForm, price: e.target.value })}
+                      required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="moq">{isArabic ? "الحد الأدنى للطلب" : "MOQ"} *</Label>
+                    <Label htmlFor="moq">{isArabic ? "الحد الأدنى للطلب" : "MOQ"}</Label>
                     <Input
                       id="moq"
                       type="number"
@@ -368,69 +269,29 @@ export default function RFQDetailPage() {
                       onChange={(e) => setQuoteForm({ ...quoteForm, moq: e.target.value })}
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="currency">{isArabic ? "العملة" : "Currency"} *</Label>
-                    <Input
-                      id="currency"
-                      placeholder="USD"
-                      value={quoteForm.currency}
-                      onChange={(e) => setQuoteForm({ ...quoteForm, currency: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="leadTimeDays">{isArabic ? "مدة التسليم (أيام)" : "Lead Time (Days)"}</Label>
-                    <Input
-                      id="leadTimeDays"
-                      type="number"
-                      placeholder="30"
-                      value={quoteForm.leadTimeDays}
-                      onChange={(e) => setQuoteForm({ ...quoteForm, leadTimeDays: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="validityDays">{isArabic ? "صالح لمدة (أيام)" : "Validity (Days)"}</Label>
-                    <Input
-                      id="validityDays"
-                      type="number"
-                      placeholder="30"
-                      value={quoteForm.validityDays}
-                      onChange={(e) => setQuoteForm({ ...quoteForm, validityDays: e.target.value })}
-                    />
-                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="paymentTerms">{isArabic ? "شروط الدفع" : "Payment Terms"}</Label>
+                  <Label htmlFor="lead_time">{isArabic ? "مدة التسليم" : "Lead Time"}</Label>
                   <Input
-                    id="paymentTerms"
-                    placeholder={isArabic ? "مثال: 30% مقدم، 70% قبل الشحن" : "e.g., 30% advance, 70% before shipment"}
-                    value={quoteForm.paymentTerms}
-                    onChange={(e) => setQuoteForm({ ...quoteForm, paymentTerms: e.target.value })}
+                    id="lead_time"
+                    placeholder={isArabic ? "مثال: 15 يوم" : "e.g., 15 days"}
+                    value={quoteForm.lead_time}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, lead_time: e.target.value })}
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="deliveryTerms">{isArabic ? "شروط التسليم" : "Delivery Terms"}</Label>
-                  <Input
-                    id="deliveryTerms"
-                    placeholder={isArabic ? "مثال: FOB شنغهاي" : "e.g., FOB Shanghai"}
-                    value={quoteForm.deliveryTerms}
-                    onChange={(e) => setQuoteForm({ ...quoteForm, deliveryTerms: e.target.value })}
-                  />
+                  <p className="text-xs text-muted-foreground">
+                    {isArabic ? "ادخل مدة التسليم بالأيام مثل '30 يوم'" : "Enter lead time like '30 days' or '2 weeks'"}
+                  </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="notes">{isArabic ? "ملاحظات إضافية" : "Additional Notes"}</Label>
                   <Textarea
                     id="notes"
-                    placeholder={isArabic ? "أي معلومات إضافية..." : "Any additional information..."}
+                    placeholder={isArabic ? "أي معلومات إضافية عن عرضك..." : "Any additional information about your quote..."}
                     value={quoteForm.notes}
                     onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })}
-                    rows={3}
+                    rows={4}
                   />
                 </div>
 
@@ -451,16 +312,53 @@ export default function RFQDetailPage() {
                   </p>
                 </div>
 
+                {/* Display selected files */}
+                {quoteForm.attachments.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">{isArabic ? "الملفات المختارة:" : "Selected Files:"}</Label>
+                    <div className="space-y-1">
+                      {quoteForm.attachments.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
+                          <span className="text-sm">{file.name}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const newAttachments = [...quoteForm.attachments]
+                              newAttachments.splice(index, 1)
+                              setQuoteForm({ ...quoteForm, attachments: newAttachments })
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowQuoteDialog(false)}
+                    onClick={() => {
+                      setShowQuoteDialog(false)
+                      // Reset form when closing
+                      setQuoteForm({
+                        price: "",
+                        moq: "",
+                        lead_time: "",
+                        notes: "",
+                        attachments: [],
+                      })
+                    }}
+                    disabled={submitting}
                     className="bg-transparent"
                   >
                     {isArabic ? "إلغاء" : "Cancel"}
                   </Button>
-                  <Button type="submit" disabled={submitting}>
+                  <Button type="submit" disabled={submitting || !quoteForm.price}>
                     {submitting
                       ? isArabic
                         ? "جاري الإرسال..."

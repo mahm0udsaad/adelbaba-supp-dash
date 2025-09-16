@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,6 +39,11 @@ interface ProductContentProps {
 export function ProductContent({ content, setContent }: ProductContentProps) {
   const { t } = useI18n()
   const [hasContent, setHasContent] = useState(!!content)
+
+  // Sync hasContent with incoming content changes (e.g., Fill Sample Data)
+  useEffect(() => {
+    setHasContent(!!content)
+  }, [content])
 
   // Initialize with empty content if enabling
   const enableContent = () => {

@@ -15,9 +15,8 @@ import { useI18n } from "@/lib/i18n/context"
 import { ProductDetail } from "@/src/services/types/product-types"
 import { MediaUpload } from "./MediaUpload"
 import { PricingTiered } from "./PricingTiered"
-import { SkuManager } from "./SkuManager"
-import { ProductContent } from "./ProductContent"
 import { EnhancedSkuManager } from "./EnhancedSkuManager"
+import { ProductContent } from "./ProductContent"
 import { Wand2, Loader2, AlertCircle, CheckCircle } from "lucide-react"
 
 const PricingRange = ({ range, setRange, errors }: { 
@@ -79,38 +78,197 @@ interface ProductFormProps {
 // Development sample data
 const SAMPLE_DATA = {
   name: "Wireless Bluetooth Headphones - Premium Quality",
-  description: "High-quality wireless Bluetooth headphones with noise cancellation, premium sound quality, and long battery life. Perfect for music lovers and professionals who demand the best audio experience.",
+  description: "High-quality wireless Bluetooth headphones with advanced noise cancellation, premium sound quality, and extended battery life. Perfect for music lovers, professionals, and gamers who demand the best audio experience. Features include touch controls, voice assistant support, and quick charge capability.",
   categoryId: "1",
   moq: 50,
   productUnitId: 1,
   isActive: true,
-  priceType: "range" as const,
+  priceType: "sku" as const,
   rangePrice: { min_price: "25.00", max_price: "45.00" },
   tieredPrices: [
     { min_quantity: 50, price: 32 },
     { min_quantity: 100, price: 30 },
     { min_quantity: 500, price: 28 },
-    { min_quantity: 1000, price: 25 }
+    { min_quantity: 1000, price: 25 },
+    { min_quantity: 2000, price: 23 }
+  ],
+  enhancedSkus: [
+    {
+      code: "WBH-BLACK-PREMIUM-001",
+      price: 32.00,
+      inventory: {
+        warehouses: [
+          {
+            warehouse_id: 31,
+            on_hand: 100,
+            reserved: 10,
+            reorder_point: 20,
+            restock_level: 50,
+            track_inventory: true
+          }
+        ]
+      },
+      attributes: [
+        { type: "select", variation_value_id: 5 },
+        { type: "color", variation_value_id: 7, hex_color: "#000000" },
+        { type: "select", variation_value_id: 8 }
+      ]
+    },
+    {
+      code: "WBH-WHITE-STANDARD-002", 
+      price: 28.00,
+      inventory: {
+        warehouses: [
+          {
+            warehouse_id: 31,
+            on_hand: 150,
+            reserved: 5,
+            reorder_point: 25,
+            restock_level: 75,
+            track_inventory: true
+          }
+        ]
+      },
+      attributes: [
+        { type: "select", variation_value_id: 6 },
+        { type: "color", variation_value_id: 9, hex_color: "#FFFFFF" },
+        { type: "select", variation_value_id: 10 }
+      ]
+    },
+    {
+      code: "WBH-BLUE-GAMING-003",
+      price: 35.00,
+      inventory: {
+        warehouses: [
+          {
+            warehouse_id: 31,
+            on_hand: 75,
+            reserved: 15,
+            reorder_point: 15,
+            restock_level: 40,
+            track_inventory: true
+          }
+        ]
+      },
+      attributes: [
+        { type: "select", variation_value_id: 11 },
+        { type: "color", variation_value_id: 12, hex_color: "#0066CC" },
+        { type: "select", variation_value_id: 13 },
+        { type: "select", variation_value_id: 14 }
+      ]
+    }
   ],
   content: {
     general: { 
-      name: "Wireless Bluetooth Headphones",
-      material: "Premium ABS Plastic & Memory Foam",
+      name: "TechSound Pro Wireless Headphones",
+      material: "Premium ABS Plastic, Memory Foam, Stainless Steel",
       brand: "TechSound Pro",
-      model: "WBH-2024-001"
+      model: "WBH-2024-PRO-001",
+      weight: "280g",
+      dimensions: "190 x 160 x 80 mm",
+      color: "Black, White, Blue",
+      warranty: "1-3 Years (varies by edition)",
+      certification: "CE, FCC, RoHS",
+      origin: "Made in China",
+      packaging: "Premium Gift Box with Accessories"
     },
     specifications: [
-      { name: "Bluetooth Version", value: "5.3" },
-      { name: "Battery Life", value: "30 hours" },
-      { name: "Charging Time", value: "2 hours" },
-      { name: "Driver Size", value: "40mm" },
-      { name: "Frequency Response", value: "20Hz - 20kHz" },
-      { name: "Impedance", value: "32Ω" }
+      // Audio Specifications
+      { name: "Bluetooth Version", value: "5.3 with aptX HD" },
+      { name: "Audio Codecs", value: "SBC, AAC, aptX, aptX HD" },
+      { name: "Driver Size", value: "40mm Neodymium" },
+      { name: "Frequency Response", value: "20Hz - 40kHz" },
+      { name: "Impedance", value: "32Ω ±15%" },
+      { name: "Sensitivity", value: "110dB ±3dB" },
+      { name: "THD", value: "<0.1% (1kHz, 1mW)" },
+      
+      // Battery & Power
+      { name: "Battery Capacity", value: "600mAh Lithium" },
+      { name: "Playback Time", value: "30 hours (ANC off), 25 hours (ANC on)" },
+      { name: "Talk Time", value: "35 hours" },
+      { name: "Standby Time", value: "200 hours" },
+      { name: "Charging Time", value: "2 hours (full), 15 min (3 hours play)" },
+      { name: "Charging Port", value: "USB-C with fast charge" },
+      
+      // Features
+      { name: "Active Noise Cancellation", value: "Yes, up to -35dB" },
+      { name: "Transparency Mode", value: "Yes, adjustable" },
+      { name: "Touch Controls", value: "Gesture control with customization" },
+      { name: "Voice Assistant", value: "Siri, Google Assistant, Alexa" },
+      { name: "Multipoint Connection", value: "Connect 2 devices simultaneously" },
+      { name: "App Support", value: "TechSound Pro App (iOS/Android)" },
+      { name: "Water Resistance", value: "IPX4 rated" },
+      
+      // Physical
+      { name: "Operating Range", value: "10 meters (33 feet)" },
+      { name: "Operating Temperature", value: "-10°C to +55°C" },
+      { name: "Storage Temperature", value: "-20°C to +60°C" },
+      { name: "Foldable Design", value: "Yes, 90° swivel + fold flat" }
     ],
     shipping: [
-      { method: "Express", time: "5-7 days", cost: "$15" },
-      { method: "Standard", time: "10-15 days", cost: "$8" },
-      { method: "Economy", time: "20-30 days", cost: "$3" }
+      { 
+        method: "Express Shipping", 
+        time: "5-7 business days", 
+        cost: "$15.00",
+        description: "DHL/FedEx with tracking and insurance"
+      },
+      { 
+        method: "Standard Shipping", 
+        time: "10-15 business days", 
+        cost: "$8.00",
+        description: "Regular postal service with basic tracking"
+      },
+      { 
+        method: "Economy Shipping", 
+        time: "20-30 business days", 
+        cost: "$3.00",
+        description: "Slowest but most economical option"
+      },
+      {
+        method: "Air Freight (Bulk)",
+        time: "7-12 business days",
+        cost: "Contact for quote",
+        description: "Best for orders over 1000 units"
+      }
+    ],
+    features: [
+      "Advanced Active Noise Cancellation up to -35dB",
+      "Premium 40mm Neodymium drivers for exceptional sound",
+      "30-hour battery life with quick 15-minute charge",
+      "Bluetooth 5.3 with aptX HD for superior audio quality",
+      "Comfortable memory foam ear cushions",
+      "Intuitive touch controls with gesture support",
+      "Voice assistant compatibility (Siri, Google, Alexa)",
+      "Foldable design for easy storage and travel",
+      "IPX4 water resistance for workout protection",
+      "Multipoint connection for two devices",
+      "Dedicated mobile app for customization"
+    ],
+    whatsIncluded: [
+      "1x Wireless Bluetooth Headphones",
+      "1x Premium Carrying Case", 
+      "1x USB-C Charging Cable (1.2m)",
+      "1x 3.5mm Audio Cable (1.5m)",
+      "1x Airplane Adapter",
+      "1x Quick Start Guide",
+      "1x Warranty Card",
+      "1x Premium Gift Box"
+    ],
+    targetMarkets: [
+      "Music enthusiasts and audiophiles",
+      "Business professionals for calls and meetings", 
+      "Gamers seeking immersive audio experience",
+      "Students for online learning and entertainment",
+      "Travelers who need noise cancellation",
+      "Fitness enthusiasts with water-resistant needs"
+    ],
+    qualityAssurance: [
+      "ISO 9001:2015 certified manufacturing",
+      "100% tested before shipping",
+      "CE, FCC, RoHS compliance",
+      "Quality control at every production stage",
+      "30-day money-back guarantee",
+      "Comprehensive warranty coverage"
     ]
   }
 }
@@ -139,7 +297,6 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
   const [mediaToRemove, setMediaToRemove] = useState<number[]>([])
   const [rangePrice, setRangePrice] = useState({ min_price: "", max_price: "" })
   const [tieredPrices, setTieredPrices] = useState<{ min_quantity: number; price: number }[]>([])
-  const [skus, setSkus] = useState<any[]>([])
   const [enhancedSkus, setEnhancedSkus] = useState<any[]>([])
   const [content, setContent] = useState<any>(null)
 
@@ -154,6 +311,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
     setPriceType(SAMPLE_DATA.priceType)
     setRangePrice(SAMPLE_DATA.rangePrice)
     setTieredPrices(SAMPLE_DATA.tieredPrices)
+    setEnhancedSkus(SAMPLE_DATA.enhancedSkus)
     setContent(SAMPLE_DATA.content)
     setErrors({}) // Clear any validation errors
   }
@@ -166,7 +324,8 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
     if (!description.trim()) newErrors.description = "Description is required"
     if (!categoryId) newErrors.categoryId = "Category is required"
     if (moq < 1) newErrors.moq = "MOQ must be at least 1"
-    if (newMediaFiles.length === 0 && existingMedia.length === 0) {
+    const remainingExistingMediaCount = existingMedia.filter(m => !mediaToRemove.includes(m.id as any)).length
+    if (newMediaFiles.length === 0 && remainingExistingMediaCount === 0) {
       newErrors.media = "At least one media file is required"
     }
 
@@ -185,6 +344,36 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
 
     if (priceType === "sku" && enhancedSkus.length === 0) {
       newErrors.pricing = "At least one SKU is required for SKU pricing"
+    }
+
+    // Validate SKUs if they exist
+    if (priceType === "sku" && enhancedSkus.length > 0) {
+      enhancedSkus.forEach((sku, index) => {
+        if (!sku.code) {
+          newErrors[`sku_${index}_code`] = `SKU ${index + 1} code is required`
+        }
+        if (!sku.inventory || !sku.inventory.warehouses || sku.inventory.warehouses.length === 0) {
+          newErrors[`sku_${index}_inventory`] = `SKU ${index + 1} inventory is required`
+        }
+        if (!sku.attributes || sku.attributes.length === 0) {
+          newErrors[`sku_${index}_attributes`] = `SKU ${index + 1} attributes are required`
+        } else {
+          sku.attributes.forEach((attr: any, attrIndex: number) => {
+            if (!attr.type || !['select', 'color', 'image'].includes(attr.type)) {
+              newErrors[`sku_${index}_attr_${attrIndex}_type`] = `Invalid attribute type for SKU ${index + 1}`
+            }
+            if (!attr.variation_value_id) {
+              newErrors[`sku_${index}_attr_${attrIndex}_variation`] = `Variation value required for SKU ${index + 1}`
+            }
+            if (attr.type === 'color' && !attr.hex_color) {
+              newErrors[`sku_${index}_attr_${attrIndex}_color`] = `Color value required for SKU ${index + 1}`
+            }
+            if (attr.type === 'image' && !(attr.image instanceof File)) {
+              newErrors[`sku_${index}_attr_${attrIndex}_image`] = `Image file required for SKU ${index + 1}`
+            }
+          })
+        }
+      })
     }
 
     setErrors(newErrors)
@@ -208,29 +397,23 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
         setTieredPrices(initialData.tieredPrices || [])
       }
       if (initialData.price_type === 'sku') {
-        setSkus(initialData.skus || [])
+        // Map backend skus to enhancedSkus shape if necessary
+        setEnhancedSkus((initialData.skus as any[]) || [])
       }
     }
   }, [initialData])
 
   // Clear errors when user starts typing
   useEffect(() => {
-    if (errors.name && name) setErrors(prev => ({ ...prev, name: "" }))
-  }, [name, errors.name])
-
-  useEffect(() => {
-    if (errors.description && description) setErrors(prev => ({ ...prev, description: "" }))
-  }, [description, errors.description])
-
-  useEffect(() => {
-    if (errors.categoryId && categoryId) setErrors(prev => ({ ...prev, categoryId: "" }))
-  }, [categoryId, errors.categoryId])
-
-  useEffect(() => {
-    if (errors.media && (newMediaFiles.length > 0 || existingMedia.length > 0)) {
-      setErrors(prev => ({ ...prev, media: "" }))
-    }
-  }, [newMediaFiles, existingMedia, errors.media])
+    setErrors(prev => {
+      const newErrors = { ...prev }
+      if (prev.name && name) delete newErrors.name
+      if (prev.description && description) delete newErrors.description
+      if (prev.categoryId && categoryId) delete newErrors.categoryId
+      if (prev.media && (newMediaFiles.length > 0 || existingMedia.length > 0)) delete newErrors.media
+      return newErrors
+    })
+  }, [name, description, categoryId, newMediaFiles, existingMedia])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -247,63 +430,135 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
     setIsSubmitting(true)
     
     try {
-    // Create the new JSON structure
-    const productData = {
-      product: {
-        name,
-        description,
-        content,
-        moq,
-        product_unit_id: productUnitId,
-        price_type: priceType,
-        is_active: isActive,
-        category_id: parseInt(categoryId)
-      },
-      media: newMediaFiles,
-      ...(priceType === "range" && {
-        range_price: {
-            min_price: parseFloat(rangePrice.min_price),
-            max_price: parseFloat(rangePrice.max_price)
-        }
-      }),
-      ...(priceType === "tiered" && {
-        tiered_prices: tieredPrices
-      }),
-      ...(priceType === "sku" && {
-        skus: enhancedSkus
-      })
-    }
+      // Create FormData for multipart/form-data submission
+      const fd = new FormData()
+      
+      // Core product fields
+      fd.append('product[name]', name)
+      fd.append('product[description]', description)
+      fd.append('product[moq]', String(moq))
+      fd.append('product[product_unit_id]', String(productUnitId))
+      fd.append('product[price_type]', priceType)
+      fd.append('product[is_active]', isActive ? '1' : '0')
+      fd.append('product[category_id]', String(parseInt(categoryId)))
 
-    // Create FormData for multipart/form-data submission
-    const fd = new FormData()
-    
-    // Add the JSON data as a single field
-    fd.append("data", JSON.stringify(productData))
-    
-    // Add media files separately
-    newMediaFiles.forEach((file, index) => {
-      fd.append(`media[${index}]`, file)
-    })
-    
-      // Add SKU images if any
-      if (priceType === "sku" && enhancedSkus.length > 0) {
+      // Content as nested fields (Laravel expects arrays, not a JSON string)
+      const serializeContentAsJson = process.env.NEXT_PUBLIC_SERIALIZE_CONTENT_AS_JSON === 'true'
+      if (content && serializeContentAsJson) {
+        // If backend accepts JSON string for content, send as a single field
+        fd.append('product[content]', JSON.stringify(content))
+      } else if (content) {
+        // general
+        if (content.general) {
+          Object.entries(content.general).forEach(([key, value]) => {
+            fd.append(`product[content][general][${key}]`, String(value))
+          })
+        }
+        // specifications
+        if (Array.isArray(content.specifications)) {
+          content.specifications.forEach((spec: any, index: number) => {
+            if (spec && (spec.name || spec.value)) {
+              fd.append(`product[content][specifications][${index}][name]`, String(spec.name ?? ''))
+              fd.append(`product[content][specifications][${index}][value]`, String(spec.value ?? ''))
+            }
+          })
+        }
+        // shipping
+        if (Array.isArray(content.shipping)) {
+          content.shipping.forEach((ship: any, index: number) => {
+            if (ship && (ship.method || ship.time || ship.cost)) {
+              fd.append(`product[content][shipping][${index}][method]`, String(ship.method ?? ''))
+              fd.append(`product[content][shipping][${index}][time]`, String(ship.time ?? ''))
+              fd.append(`product[content][shipping][${index}][cost]`, String(ship.cost ?? ''))
+              if (ship.description) {
+                fd.append(`product[content][shipping][${index}][description]`, String(ship.description))
+              }
+            }
+          })
+        }
+        // features, whatsIncluded, targetMarkets, qualityAssurance - handle as arrays
+        if (Array.isArray(content.features)) {
+          content.features.forEach((feature: string, index: number) => {
+            fd.append(`product[content][features][${index}]`, String(feature))
+          })
+        }
+        if (Array.isArray(content.whatsIncluded)) {
+          content.whatsIncluded.forEach((item: string, index: number) => {
+            fd.append(`product[content][whatsIncluded][${index}]`, String(item))
+          })
+        }
+        if (Array.isArray(content.targetMarkets)) {
+          content.targetMarkets.forEach((market: string, index: number) => {
+            fd.append(`product[content][targetMarkets][${index}]`, String(market))
+          })
+        }
+        if (Array.isArray(content.qualityAssurance)) {
+          content.qualityAssurance.forEach((qa: string, index: number) => {
+            fd.append(`product[content][qualityAssurance][${index}]`, String(qa))
+          })
+        }
+      }
+
+      // Pricing fields
+      if (priceType === 'range') {
+        fd.append('range_price[min_price]', String(parseFloat(rangePrice.min_price)))
+        fd.append('range_price[max_price]', String(parseFloat(rangePrice.max_price)))
+      }
+
+      if (priceType === 'tiered') {
+        tieredPrices.forEach((tier, index) => {
+          fd.append(`tiered_prices[${index}][min_quantity]`, String(tier.min_quantity))
+          fd.append(`tiered_prices[${index}][price]`, String(tier.price))
+        })
+      }
+
+      // SKUs: Only append when price_type is 'sku' and we have valid SKUs
+      if (priceType === 'sku' && enhancedSkus && enhancedSkus.length > 0) {
         enhancedSkus.forEach((sku: any, skuIndex: number) => {
+          // Required fields
+          if (sku.code) fd.append(`skus[${skuIndex}][code]`, String(sku.code))
+          if (typeof sku.price !== 'undefined') fd.append(`skus[${skuIndex}][price]`, String(sku.price))
+          
+          // Inventory by warehouses
+          if (sku.inventory?.warehouses) {
+            sku.inventory.warehouses.forEach((w: any, wIndex: number) => {
+              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][warehouse_id]`, String(w.warehouse_id))
+              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][on_hand]`, String(w.on_hand))
+              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reserved]`, String(w.reserved))
+              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reorder_point]`, String(w.reorder_point))
+              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][restock_level]`, String(w.restock_level))
+              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][track_inventory]`, w.track_inventory ? '1' : '0')
+            })
+          }
+          
+          // Attributes
           if (sku.attributes) {
             sku.attributes.forEach((attr: any, attrIndex: number) => {
-              if (attr.type === "image" && attr.image) {
-                fd.append(`sku[${skuIndex}][attribute][${attrIndex}][image]`, attr.image)
+              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][type]`, String(attr.type))
+              if (attr.variation_value_id) {
+                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][variation_value_id]`, String(attr.variation_value_id))
+              }
+              if (attr.hex_color) {
+                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][hex_color]`, String(attr.hex_color))
+              }
+              if (attr.image && attr.image instanceof File) {
+                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][image]`, attr.image)
               }
             })
           }
         })
       }
 
-    if (isEditMode) {
-        fd.append("_method", "PUT")
-        mediaToRemove.forEach(id => fd.append("media[remove][]", String(id)))
-    }
+      // Add media files (Laravel array notation)
+      newMediaFiles.forEach((file) => {
+        fd.append('media[]', file)
+      })
 
-    await onSubmit(fd)
+      if (isEditMode) {
+        mediaToRemove.forEach(id => fd.append('media[remove][]', String(id)))
+      }
+
+      await onSubmit(fd)
     } catch (error) {
       console.error('Form submission error:', error)
     } finally {
@@ -347,10 +602,10 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
         )}
       </div>
 
-    <form id="product-form" onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
+      <form id="product-form" onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
           {/* Basic Information */}
-        <Card>
+          <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">1</div>
@@ -392,26 +647,26 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                   <div className="flex items-center gap-2 text-sm text-red-600">
                     <AlertCircle className="h-4 w-4" />
                     {errors.description}
-            </div>
+                  </div>
                 )}
-            </div>
+              </div>
 
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="category" className="text-sm font-medium">
                     {t.category} *
                   </Label>
-                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <Select value={categoryId} onValueChange={setCategoryId}>
                     <SelectTrigger className={errors.categoryId ? "border-red-500 focus-visible:ring-red-500" : ""}>
                       <SelectValue placeholder={t.selectCategory} />
                     </SelectTrigger>
-                  <SelectContent>
+                    <SelectContent>
                       <SelectItem value="1">Electronics & Electrical</SelectItem>
                       <SelectItem value="2">Textiles & Apparel</SelectItem>
                       <SelectItem value="3">Home & Kitchen</SelectItem>
                       <SelectItem value="4">Renewable Energy</SelectItem>
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
                   {errors.categoryId && (
                     <div className="flex items-center gap-2 text-sm text-red-600">
                       <AlertCircle className="h-4 w-4" />
@@ -457,8 +712,8 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
             </CardHeader>
             <CardContent>
               <ProductContent content={content} setContent={setContent} />
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
           {/* Media Upload */}
           <Card>
@@ -472,13 +727,13 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
               </p>
             </CardHeader>
             <CardContent>
-        <MediaUpload 
-            existingMedia={existingMedia}
-            newFiles={newMediaFiles}
-            onNewFiles={setNewMediaFiles}
-            onRemoveExisting={(id) => setMediaToRemove([...mediaToRemove, id])}
-            onRemoveNew={(file) => setNewMediaFiles(newMediaFiles.filter(f => f !== file))}
-        />
+              <MediaUpload 
+                existingMedia={existingMedia}
+                newFiles={newMediaFiles}
+                onNewFiles={setNewMediaFiles}
+                onRemoveExisting={(id) => setMediaToRemove([...mediaToRemove, id])}
+                onRemoveNew={(file) => setNewMediaFiles(newMediaFiles.filter(f => f !== file))}
+              />
               {errors.media && (
                 <div className="flex items-center gap-2 text-sm text-red-600 mt-3">
                   <AlertCircle className="h-4 w-4" />
@@ -489,7 +744,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
           </Card>
 
           {/* Pricing */}
-        <Card>
+          <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm font-medium">4</div>
@@ -502,46 +757,53 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">{t.priceType}</Label>
-              <Select value={priceType} onValueChange={(v: any) => setPriceType(v)}>
+                <Select value={priceType} onValueChange={(v: any) => setPriceType(v)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="range">{t.priceRange}</SelectItem>
-                  <SelectItem value="tiered">{t.tieredPricing}</SelectItem>
-                  <SelectItem value="sku">{t.perSKUPricing}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                  <SelectContent>
+                    <SelectItem value="range">{t.priceRange}</SelectItem>
+                    <SelectItem value="tiered">{t.tieredPricing}</SelectItem>
+                    <SelectItem value="sku">{t.perSKUPricing}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               <Separator />
               
               <div>
-            {renderPricingSection()}
+                {renderPricingSection()}
                 {errors.pricing && (
                   <div className="flex items-center gap-2 text-sm text-red-600 mt-3">
                     <AlertCircle className="h-4 w-4" />
                     {errors.pricing}
                   </div>
                 )}
+                {/* Display SKU-specific validation errors */}
+                {Object.entries(errors).filter(([key]) => key.startsWith('sku_')).map(([key, error]) => (
+                  <div key={key} className="flex items-center gap-2 text-sm text-red-600 mt-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {error}
+                  </div>
+                ))}
               </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Sidebar */}
-      <div className="space-y-6">
+        <div className="space-y-6">
           {/* Save Actions */}
-        <Card>
+          <Card>
             <CardHeader>
               <CardTitle className="text-lg">Save & Publish</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="is_active" 
-                  checked={isActive} 
-                  onCheckedChange={v => setIsActive(Boolean(v.valueOf()))} 
+                  checked={isActive === true} 
+                  onCheckedChange={(v) => setIsActive(v === true)} 
                 />
                 <Label htmlFor="is_active" className="text-sm font-medium">
                   {t.productIsActive}
@@ -610,11 +872,11 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
               <div className="space-y-2">
                 <p className="font-medium">📦 Accurate MOQ</p>
                 <p className="text-muted-foreground">Set realistic minimum order quantities</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </form>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </form>
     </div>
   )
 }

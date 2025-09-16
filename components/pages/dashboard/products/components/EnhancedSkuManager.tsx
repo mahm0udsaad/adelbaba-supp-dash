@@ -83,19 +83,23 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
   const [expandedSkus, setExpandedSkus] = useState<Set<number>>(new Set());
 
   // Mock data - in real app, these would come from props or API
-  const mockWarehouses: Warehouse[] = warehouses.length ? warehouses : [
-    { id: 31, name: 'Main Warehouse' },
-    { id: 32, name: 'Secondary Warehouse' }
-  ];
+  const mockWarehouses: Warehouse[] = useMemo(() => (
+    warehouses.length ? warehouses : [
+      { id: 31, name: 'Main Warehouse' },
+      { id: 32, name: 'Secondary Warehouse' }
+    ]
+  ), [warehouses]);
 
-  const mockVariationValues: VariationValue[] = variationValues.length ? variationValues : [
-    { id: 5, name: 'Size', value: 'Small' },
-    { id: 6, name: 'Size', value: 'Medium' },
-    { id: 7, name: 'Color', value: 'Red' },
-    { id: 8, name: 'Color', value: 'Blue' },
-    { id: 9, name: 'Style', value: 'Classic' },
-    { id: 10, name: 'Style', value: 'Modern' }
-  ];
+  const mockVariationValues: VariationValue[] = useMemo(() => (
+    variationValues.length ? variationValues : [
+      { id: 5, name: 'Size', value: 'Small' },
+      { id: 6, name: 'Size', value: 'Medium' },
+      { id: 7, name: 'Color', value: 'Red' },
+      { id: 8, name: 'Color', value: 'Blue' },
+      { id: 9, name: 'Style', value: 'Classic' },
+      { id: 10, name: 'Style', value: 'Modern' }
+    ]
+  ), [variationValues]);
 
   const generatedSkus = useMemo(() => {
     const validAttributes = attributes.filter(a => a.name && a.values.length > 0);
@@ -132,8 +136,9 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
   }, [attributes, mockWarehouses]);
 
   useEffect(() => {
+    if (attributes.length === 0) return;
     setSkus(generatedSkus);
-  }, [generatedSkus, setSkus]);
+  }, [generatedSkus, setSkus, attributes.length]);
 
   const addAttribute = () => {
     setAttributes([...attributes, { 
