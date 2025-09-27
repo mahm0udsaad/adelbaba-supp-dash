@@ -10,109 +10,65 @@ import { useI18n } from "@/lib/i18n/context"
 import { RevenueCharts } from "./components/RevenueCharts"
 import { OrdersStatus } from "./components/OrdersStatus"
 import { TopLists } from "./components/TopLists"
-import { useMockData } from "@/lib/mock-data-context"
+import { AnalyticsProvider, useAnalytics } from "@/lib/analytics-context"
+import type { AnalyticsData } from "./components/types"
+import { format, subMonths } from "date-fns"
 
-interface AnalyticsData {
+const emptyAnalyticsData: AnalyticsData = {
   revenue: {
-    totalRevenue: number
-    monthlyRevenue: number
-    revenueGrowth: number
-    monthlyData: Array<{ month: string; revenue: number; orders: number }>
-  }
-  orders: {
-    totalOrders: number
-    monthlyOrders: number
-    orderGrowth: number
-    statusBreakdown: Array<{ status: string; count: number; percentage: number }>
-  }
-  products: {
-    totalProducts: number
-    activeProducts: number
-    topProducts: Array<{ id: string; name: string; sales: number; revenue: number }>
-  }
-  buyers: {
-    totalBuyers: number
-    activeBuyers: number
-    newBuyers: number
-    buyerGrowth: number
-    topBuyers: Array<{ id: string; name: string; orders: number; revenue: number; country: string }>
-  }
-}
-
-const mockAnalyticsData: AnalyticsData = {
-  revenue: {
-    totalRevenue: 284750,
-    monthlyRevenue: 47458,
-    revenueGrowth: 18.5,
-    monthlyData: [
-      { month: "Jul", revenue: 32500, orders: 45 },
-      { month: "Aug", revenue: 38200, orders: 52 },
-      { month: "Sep", revenue: 41800, orders: 58 },
-      { month: "Oct", revenue: 45300, orders: 61 },
-      { month: "Nov", revenue: 39900, orders: 55 },
-      { month: "Dec", revenue: 47458, orders: 67 },
-      { month: "Jan", revenue: 52100, orders: 72 },
-    ],
+    totalRevenue: 0,
+    monthlyRevenue: 0,
+    revenueGrowth: 0,
+    monthlyData: [],
   },
   orders: {
-    totalOrders: 410,
-    monthlyOrders: 67,
-    orderGrowth: 21.8,
-    statusBreakdown: [
-      { status: "Delivered", count: 245, percentage: 59.8 },
-      { status: "Shipped", count: 78, percentage: 19.0 },
-      { status: "In Escrow", count: 52, percentage: 12.7 },
-      { status: "Awaiting Payment", count: 25, percentage: 6.1 },
-      { status: "Disputed", count: 10, percentage: 2.4 },
-    ],
+    totalOrders: 0,
+    monthlyOrders: 0,
+    orderGrowth: 0,
+    statusBreakdown: [],
   },
   products: {
-    totalProducts: 156,
-    activeProducts: 142,
-    topProducts: [
-      { id: "LED-001", name: "Industrial LED Light Fixtures", sales: 89, revenue: 45200 },
-      { id: "TEX-001", name: "Premium Cotton T-Shirts", sales: 156, revenue: 38400 },
-      { id: "AUD-001", name: "Bluetooth Wireless Speakers", sales: 78, revenue: 32100 },
-      { id: "ELE-001", name: "Wireless Headphones Premium", sales: 92, revenue: 28750 },
-      { id: "CAB-001", name: "USB-C Charging Cables", sales: 234, revenue: 24680 },
-      { id: "MOB-001", name: "Smartphone Cases Premium", sales: 145, revenue: 22300 },
-      { id: "GAR-001", name: "Solar Garden Lights", sales: 67, revenue: 18900 },
-      { id: "OFF-001", name: "Ergonomic Office Chairs", sales: 34, revenue: 15200 },
-    ],
+    totalProducts: 0,
+    activeProducts: 0,
+    topProducts: [],
   },
   buyers: {
-    totalBuyers: 89,
-    activeBuyers: 67,
-    newBuyers: 12,
-    buyerGrowth: 15.2,
-    topBuyers: [
-      { id: "BUY-001", name: "TechCorp Industries", orders: 23, revenue: 67500, country: "United States" },
-      { id: "BUY-002", name: "Fashion Forward LLC", orders: 18, revenue: 45200, country: "United Kingdom" },
-      { id: "BUY-003", name: "Global Retail Co", orders: 15, revenue: 38900, country: "Canada" },
-      { id: "BUY-004", name: "Audio Solutions Inc", orders: 12, revenue: 32400, country: "Australia" },
-      { id: "BUY-005", name: "Electronics Hub", orders: 14, revenue: 28750, country: "Germany" },
-      { id: "BUY-006", name: "StartupTech Ltd", orders: 9, revenue: 24100, country: "Netherlands" },
-      { id: "BUY-007", name: "Home & Garden Co", orders: 11, revenue: 19800, country: "France" },
-      { id: "BUY-008", name: "Office Solutions Pro", orders: 8, revenue: 16500, country: "Sweden" },
-    ],
+    totalBuyers: 0,
+    activeBuyers: 0,
+    newBuyers: 0,
+    buyerGrowth: 0,
+    topBuyers: [],
   },
 }
 
-export default function AnalyticsPage() {
-  const [loading] = useState(false)
-  const [period, setPeriod] = useState("6months")
+function getRange(period: string) {
+  const end = new Date()
+  let start: Date
+  switch (period) {
+    case "1month":
+      start = subMonths(end, 1)
+      break
+    case "3months":
+      start = subMonths(end, 3)
+      break
+    case "6months":
+      start = subMonths(end, 6)
+      break
+    case "1year":
+    default:
+      start = subMonths(end, 12)
+      break
+  }
+  return {
+    startDate: format(start, "yyyy-MM-dd"),
+    endDate: format(end, "yyyy-MM-dd"),
+  }
+}
+
+function AnalyticsContent({ period, setPeriod }: { period: string; setPeriod: (v: string) => void }) {
   const { t, isArabic } = useI18n()
-  const { analytics } = useMockData()
-  const analyticsData: AnalyticsData = useMemo(() => {
-    const raw = Array.isArray(analytics) ? analytics : []
-    return {
-      revenue: raw.find((item: any) => item?.id === "revenue")?.data || mockAnalyticsData.revenue,
-      orders: raw.find((item: any) => item?.id === "orders")?.data || mockAnalyticsData.orders,
-      products: raw.find((item: any) => item?.id === "products")?.data || mockAnalyticsData.products,
-      buyers: raw.find((item: any) => item?.id === "buyers")?.data || mockAnalyticsData.buyers,
-    }
-  }, [analytics, isArabic, period])
-
+  const { data, loading } = useAnalytics()
+  const analyticsData: AnalyticsData = useMemo(() => data || emptyAnalyticsData, [data, isArabic, period])
   if (loading) {
     return (
       <div className="space-y-6">
@@ -260,5 +216,15 @@ export default function AnalyticsPage() {
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+export default function AnalyticsPage() {
+  const [period, setPeriod] = useState("6months")
+  const range = getRange(period)
+  return (
+    <AnalyticsProvider startDate={range.startDate} endDate={range.endDate}>
+      <AnalyticsContent period={period} setPeriod={setPeriod} />
+    </AnalyticsProvider>
   )
 }

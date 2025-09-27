@@ -7,288 +7,50 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Crown, CheckCircle, ArrowRight } from "lucide-react"
-import apiClient from "@/lib/axios"
+import { listCompanyPlans, getCurrentCompanyPlan, type CompanyPlan, type PlanFeature } from "@/src/services/plans-api"
 import { toast } from "@/hooks/use-toast"
+
+type SubscriptionStatus = "active" | "expired" | "pending" | string
 
 interface MembershipData {
   currentPlan: {
     name: string
-    nameAr: string
-    level: string
-    badge: string
-    color: string
-    features: string[]
-    featuresAr: string[]
-    validUntil: string
-    progress: number
+    level?: string
+    badge?: string
+    color?: string
+    status?: SubscriptionStatus
+    startedAt?: string
+    expiresAt?: string
+    features: PlanFeature[]
+    progress?: number
   }
-  plans: Array<{
-    id: string
-    name: string
-    nameAr: string
-    level: string
-    price: number
-    currency: string
-    period: string
-    periodAr: string
-    badge: string
-    color: string
-    popular: boolean
-    features: string[]
-    featuresAr: string[]
-    benefits: string[]
-    benefitsAr: string[]
-  }>
-  benefits: {
+  plans: CompanyPlan[]
+  benefits?: {
     totalSales: number
     totalOrders: number
     responseRate: number
     customerSatisfaction: number
   }
-  achievements: Array<{
+  achievements?: Array<{
     id: string
     title: string
-    titleAr: string
-    description: string
-    descriptionAr: string
-    icon: string
-    earned: boolean
-    progress: number
+    titleAr?: string
+    description?: string
+    descriptionAr?: string
+    icon?: string
+    earned?: boolean
+    progress?: number
   }>
-}
-
-const mockMembershipData: MembershipData = {
-  currentPlan: {
-    name: "Gold Supplier",
-    nameAr: "مورد ذهبي",
-    level: "gold",
-    badge: "🥇",
-    color: "text-yellow-600",
-    features: [
-      "Priority customer support",
-      "Advanced analytics dashboard",
-      "Trade assurance protection",
-      "Featured product listings",
-      "Custom branding options",
-    ],
-    featuresAr: [
-      "دعم عملاء أولوية",
-      "لوحة تحليلات متقدمة",
-      "حماية الضمان التجاري",
-      "قوائم منتجات مميزة",
-      "خيارات العلامة التجارية المخصصة",
-    ],
-    validUntil: "December 31, 2024",
-    progress: 75,
-  },
-  plans: [
-    {
-      id: "silver",
-      name: "Silver Supplier",
-      nameAr: "مورد فضي",
-      level: "silver",
-      price: 99,
-      currency: "USD",
-      period: "month",
-      periodAr: "شهر",
-      badge: "🥈",
-      color: "text-gray-500",
-      popular: false,
-      features: [
-        "Enhanced product listings",
-        "Priority customer support",
-        "Advanced analytics",
-        "Up to 200 products",
-        "SMS notifications",
-        "Basic trade assurance",
-      ],
-      featuresAr: [
-        "قوائم منتجات محسنة",
-        "دعم عملاء أولوية",
-        "تحليلات متقدمة",
-        "حتى 200 منتج",
-        "إشعارات SMS",
-        "ضمان تجاري أساسي",
-      ],
-      benefits: ["Enhanced visibility", "Better conversion rates", "Trade protection"],
-      benefitsAr: ["رؤية محسنة", "معدلات تحويل أفضل", "حماية تجارية"],
-    },
-    {
-      id: "gold",
-      name: "Gold Supplier",
-      nameAr: "مورد ذهبي",
-      level: "gold",
-      price: 199,
-      currency: "USD",
-      period: "month",
-      periodAr: "شهر",
-      badge: "🥇",
-      color: "text-yellow-600",
-      popular: true,
-      features: [
-        "Premium product listings",
-        "24/7 priority support",
-        "Advanced analytics dashboard",
-        "Unlimited products",
-        "Multi-channel notifications",
-        "Full trade assurance",
-        "Featured placement",
-        "Custom branding",
-      ],
-      featuresAr: [
-        "قوائم منتجات مميزة",
-        "دعم أولوية 24/7",
-        "لوحة تحليلات متقدمة",
-        "منتجات غير محدودة",
-        "إشعارات متعددة القنوات",
-        "ضمان تجاري كامل",
-        "موضع مميز",
-        "علامة تجارية مخصصة",
-      ],
-      benefits: ["Maximum visibility", "Highest conversion rates", "Full protection", "Premium branding"],
-      benefitsAr: ["أقصى رؤية", "أعلى معدلات التحويل", "حماية كاملة", "علامة تجارية مميزة"],
-    },
-    {
-      id: "diamond",
-      name: "Diamond Supplier",
-      nameAr: "مورد ماسي",
-      level: "diamond",
-      price: 399,
-      currency: "USD",
-      period: "month",
-      periodAr: "شهر",
-      badge: "💎",
-      color: "text-blue-600",
-      popular: false,
-      features: [
-        "Exclusive product listings",
-        "Dedicated account manager",
-        "Custom analytics reports",
-        "Unlimited products",
-        "All notification channels",
-        "Premium trade assurance",
-        "Top featured placement",
-        "Full custom branding",
-        "API access",
-        "White-label solutions",
-      ],
-      featuresAr: [
-        "قوائم منتجات حصرية",
-        "مدير حساب مخصص",
-        "تقارير تحليلات مخصصة",
-        "منتجات غير محدودة",
-        "جميع قنوات الإشعار",
-        "ضمان تجاري مميز",
-        "موضع مميز أعلى",
-        "علامة تجارية مخصصة كاملة",
-        "وصول API",
-        "حلول العلامة البيضاء",
-      ],
-      benefits: ["Exclusive access", "Personal support", "Custom solutions", "Enterprise features"],
-      benefitsAr: ["وصول حصري", "دعم شخصي", "حلول مخصصة", "ميزات المؤسسة"],
-    },
-  ],
-  benefits: {
-    totalSales: 284750,
-    totalOrders: 410,
-    responseRate: 95,
-    customerSatisfaction: 4.8,
-  },
-  achievements: [
-    {
-      id: "first_sale",
-      title: "First Sale",
-      titleAr: "أول عملية بيع",
-      description: "Complete your first successful transaction",
-      descriptionAr: "أكمل أول معاملة ناجحة لك",
-      icon: "🎉",
-      earned: true,
-      progress: 100,
-    },
-    {
-      id: "hundred_orders",
-      title: "Century Club",
-      titleAr: "نادي المئة",
-      description: "Reach 100 completed orders",
-      descriptionAr: "الوصول إلى 100 طلب مكتمل",
-      icon: "💯",
-      earned: true,
-      progress: 100,
-    },
-    {
-      id: "customer_favorite",
-      title: "Customer Favorite",
-      titleAr: "المفضل لدى العملاء",
-      description: "Maintain 4.5+ star rating with 50+ reviews",
-      descriptionAr: "الحفاظ على تقييم 4.5+ نجوم مع 50+ مراجعة",
-      icon: "⭐",
-      earned: true,
-      progress: 100,
-    },
-    {
-      id: "fast_responder",
-      title: "Lightning Fast",
-      titleAr: "سريع البرق",
-      description: "Maintain 90%+ response rate for 3 months",
-      descriptionAr: "الحفاظ على معدل استجابة 90%+ لمدة 3 أشهر",
-      icon: "⚡",
-      earned: true,
-      progress: 100,
-    },
-    {
-      id: "trade_master",
-      title: "Trade Master",
-      titleAr: "سيد التجارة",
-      description: "Complete $100,000 in trade assurance transactions",
-      descriptionAr: "إكمال 100,000 دولار في معاملات الضمان التجاري",
-      icon: "🏆",
-      earned: true,
-      progress: 100,
-    },
-    {
-      id: "global_reach",
-      title: "Global Reach",
-      titleAr: "الوصول العالمي",
-      description: "Sell to customers in 20+ countries",
-      descriptionAr: "البيع للعملاء في 20+ دولة",
-      icon: "🌍",
-      earned: false,
-      progress: 85,
-    },
-    {
-      id: "million_club",
-      title: "Million Dollar Club",
-      titleAr: "نادي المليون دولار",
-      description: "Reach $1,000,000 in total sales",
-      descriptionAr: "الوصول إلى 1,000,000 دولار في إجمالي المبيعات",
-      icon: "💰",
-      earned: false,
-      progress: 28,
-    },
-    {
-      id: "innovation_leader",
-      title: "Innovation Leader",
-      titleAr: "قائد الابتكار",
-      description: "Launch 5 new product categories",
-      descriptionAr: "إطلاق 5 فئات منتجات جديدة",
-      icon: "🚀",
-      earned: false,
-      progress: 60,
-    },
-  ],
 }
 
 export default function MembershipPage() {
   const [membershipData, setMembershipData] = useState<MembershipData>({
     currentPlan: {
       name: "",
-      nameAr: "",
       level: "",
       badge: "",
       color: "",
       features: [],
-      featuresAr: [],
-      validUntil: "",
       progress: 0,
     },
     plans: [],
@@ -301,14 +63,7 @@ export default function MembershipPage() {
     achievements: [],
   })
   const [loading, setLoading] = useState(true)
-  const [language, setLanguage] = useState<"en" | "ar">("en")
-
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem("language") as "en" | "ar"
-    if (savedLanguage) {
-      setLanguage(savedLanguage)
-    }
-  }, [])
+  const [language] = useState<"en" | "ar">("en")
 
   useEffect(() => {
     fetchMembershipData()
@@ -317,16 +72,29 @@ export default function MembershipPage() {
   const fetchMembershipData = async () => {
     try {
       setLoading(true)
-      const response = await apiClient.get("/v1/supplier/membership")
+      const [plans, current] = await Promise.all([
+        listCompanyPlans(),
+        getCurrentCompanyPlan(),
+      ])
 
-      if (response.data && response.data.currentPlan && response.data.plans && Array.isArray(response.data.plans)) {
-        setMembershipData(response.data)
-      } else {
-        setMembershipData(mockMembershipData)
-      }
+      setMembershipData({
+        currentPlan: {
+          name: current?.plan?.name || "",
+          level: current?.plan?.level,
+          badge: current?.plan?.badge,
+          color: current?.plan?.color,
+          status: (current?.status as any) || undefined,
+          startedAt: (current as any)?.started_at || (current as any)?.startedAt || undefined,
+          expiresAt: (current as any)?.expires_at || (current as any)?.expiresAt || undefined,
+          features: current?.plan?.features || [],
+          progress: 0,
+        },
+        plans: plans || [],
+        benefits: { totalSales: 0, totalOrders: 0, responseRate: 0, customerSatisfaction: 0 },
+        achievements: [],
+      } as any)
     } catch (error) {
       console.error("Error fetching membership data:", error)
-      setMembershipData(mockMembershipData)
       toast({
         title: language === "ar" ? "خطأ" : "Error",
         description: language === "ar" ? "فشل في تحميل بيانات العضوية" : "Failed to load membership data",
@@ -381,60 +149,69 @@ export default function MembershipPage() {
               </div>
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <span>
-                    {isArabic
-                      ? membershipData.currentPlan?.nameAr || membershipData.currentPlan?.name || "Gold Supplier"
-                      : membershipData.currentPlan?.name || "Gold Supplier"}
-                  </span>
-                  <Badge variant="secondary" className={membershipData.currentPlan?.color || "text-yellow-600"}>
-                    {membershipData.currentPlan?.badge || "🥇"}
-                  </Badge>
+                  <span>{membershipData.currentPlan?.name || (isArabic ? "الخطة الحالية" : "Current Plan")}</span>
+                  {membershipData.currentPlan?.badge && (
+                    <Badge variant="secondary" className={membershipData.currentPlan?.color || "text-yellow-600"}>
+                      {membershipData.currentPlan?.badge}
+                    </Badge>
+                  )}
                 </CardTitle>
-                <CardDescription>
-                  {isArabic
-                    ? `صالح حتى ${membershipData.currentPlan?.validUntil || "December 31, 2024"}`
-                    : `Valid until ${membershipData.currentPlan?.validUntil || "December 31, 2024"}`}
+                <CardDescription className="flex items-center gap-2">
+                  {membershipData.currentPlan?.status && (
+                    <Badge
+                      className={
+                        membershipData.currentPlan.status === "active"
+                          ? "bg-green-100 text-green-700"
+                          : membershipData.currentPlan.status === "expired"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-yellow-100 text-yellow-700"
+                      }
+                    >
+                      {membershipData.currentPlan.status}
+                    </Badge>
+                  )}
+                  {membershipData.currentPlan?.startedAt && (
+                    <span>
+                      {isArabic ? "البدء:" : "Start:"} {new Date(membershipData.currentPlan.startedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                  {membershipData.currentPlan?.expiresAt && (
+                    <span>
+                      {isArabic ? "الانتهاء:" : "Expires:"} {new Date(membershipData.currentPlan.expiresAt).toLocaleDateString()}
+                    </span>
+                  )}
                 </CardDescription>
               </div>
             </div>
             <Button>
-              {isArabic ? "ترقية الخطة" : "Upgrade Plan"}
+              {membershipData.currentPlan?.status === "active"
+                ? isArabic ? "ترقية الخطة" : "Upgrade Plan"
+                : isArabic ? "تجديد الخطة" : "Renew Plan"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>{isArabic ? "تقدم العضوية" : "Membership Progress"}</span>
-                <span>{membershipData.currentPlan?.progress || 75}%</span>
-              </div>
-              <Progress value={membershipData.currentPlan?.progress || 75} className="h-2" />
+          <div className="space-y-2">
+            <div className="text-sm text-muted-foreground">
+              {isArabic ? "ميزات الخطة الحالية" : "Current plan features"}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
-                  ${(membershipData.benefits?.totalSales || 284750).toLocaleString()}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {(membershipData.currentPlan.features || []).map((feature) => (
+                <div key={feature.key} className="flex items-center gap-2">
+                  {feature.type === "bool" ? (
+                    <CheckCircle className={`h-4 w-4 ${feature.value_bool ? "text-green-500" : "text-muted-foreground"}`} />
+                  ) : (
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px]">{feature.type === "int" ? "#" : feature.type === "decimal" ? "$" : "i"}</span>
+                  )}
+                  <span className="text-sm">
+                    {feature.name}
+                    {feature.type === "int" && typeof feature.value_int === "number" && `: ${feature.value_int}`}
+                    {feature.type === "decimal" && typeof feature.value_decimal === "number" && `: ${feature.value_decimal}`}
+                    {feature.type === "string" && feature.value_string && `: ${feature.value_string}`}
+                  </span>
                 </div>
-                <div className="text-sm text-muted-foreground">{isArabic ? "إجمالي المبيعات" : "Total Sales"}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{membershipData.benefits?.totalOrders || 410}</div>
-                <div className="text-sm text-muted-foreground">{isArabic ? "إجمالي الطلبات" : "Total Orders"}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{membershipData.benefits?.responseRate || 95}%</div>
-                <div className="text-sm text-muted-foreground">{isArabic ? "معدل الاستجابة" : "Response Rate"}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
-                  {membershipData.benefits?.customerSatisfaction || 4.8}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {isArabic ? "رضا العملاء" : "Customer Satisfaction"}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </CardContent>
@@ -458,21 +235,30 @@ export default function MembershipPage() {
                   </div>
                 )}
                 <CardHeader className="text-center">
-                  <div className="text-4xl mb-2">{plan.badge}</div>
-                  <CardTitle className={plan.color}>{isArabic ? plan.nameAr : plan.name}</CardTitle>
+                  {plan.badge && <div className="text-4xl mb-2">{plan.badge}</div>}
+                  <CardTitle className={plan.color}>{plan.name}</CardTitle>
                   <div className="text-3xl font-bold">
-                    ${plan.price}
+                    ${Number(plan.price).toLocaleString()}
                     <span className="text-sm font-normal text-muted-foreground">
-                      /{isArabic ? plan.periodAr : plan.period}
+                      /{plan.period || plan.payment_rate || "period"}
                     </span>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    {(isArabic ? plan.featuresAr || [] : plan.features || []).map((feature, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">{feature}</span>
+                    {(plan.features || []).map((feature) => (
+                      <div key={feature.key} className="flex items-center gap-2">
+                        {feature.type === "bool" ? (
+                          <CheckCircle className={`h-4 w-4 ${feature.value_bool ? "text-green-500" : "text-muted-foreground"}`} />
+                        ) : (
+                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px]">{feature.type === "int" ? "#" : feature.type === "decimal" ? "$" : "i"}</span>
+                        )}
+                        <span className="text-sm">
+                          {feature.name}
+                          {feature.type === "int" && typeof feature.value_int === "number" && `: ${feature.value_int}`}
+                          {feature.type === "decimal" && typeof feature.value_decimal === "number" && `: ${feature.value_decimal}`}
+                          {feature.type === "string" && feature.value_string && `: ${feature.value_string}`}
+                        </span>
                       </div>
                     ))}
                   </div>

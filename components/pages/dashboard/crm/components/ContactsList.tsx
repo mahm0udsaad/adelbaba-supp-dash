@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Users, Plus } from "lucide-react"
-import type { Contact } from "./types"
+import type { CRMContactItem } from "@/src/services/crm-api"
 import { ContactCard } from "./ContactCard"
 import { useI18n } from "@/lib/i18n/context"
 
@@ -12,7 +12,7 @@ export function ContactsList({
   loading,
   onAddClick,
 }: {
-  contacts: Contact[]
+  contacts: CRMContactItem[]
   loading: boolean
   onAddClick?: () => void
 }) {

@@ -22,142 +22,17 @@ import {
   Users,
 } from "lucide-react"
 
-interface Contact {
-  id: string
-  name: string
-  company: string
-  email: string
-  phone: string
-  country: string
-  status: "active" | "prospect" | "inactive"
-  lastContact: string
-  totalOrders: number
-  totalRevenue: number
-  tags: string[]
-  notes: string
-  interactions: Array<{
-    id: string
-    type: "email" | "call" | "meeting"
-    subject: string
-    date: string
-    summary: string
-  }>
-}
+import type { CRMContactDetail } from "@/src/services/crm-api"
+import { crmApi } from "@/src/services/crm-api"
 
-const mockContactData: Record<string, Contact> = {
-  "1": {
-    id: "1",
-    name: "Sarah Johnson",
-    company: "TechCorp Solutions",
-    email: "sarah.johnson@techcorp.com",
-    phone: "+1-555-0123",
-    country: "USA",
-    status: "active",
-    lastContact: "2024-08-20T10:30:00Z",
-    totalOrders: 23,
-    totalRevenue: 45600,
-    tags: ["VIP", "Electronics"],
-    notes:
-      "Key decision maker for electronics procurement. Prefers bulk orders with extended payment terms. Has been a loyal customer for over 2 years.",
-    interactions: [
-      {
-        id: "1",
-        type: "email",
-        subject: "New Product Inquiry - Wireless Charging Solutions",
-        date: "2024-08-20T10:30:00Z",
-        summary:
-          "Inquired about wireless charging solutions for office setup. Interested in bulk pricing for 500+ units.",
-      },
-      {
-        id: "2",
-        type: "call",
-        subject: "Order Follow-up #ORD-2024-156",
-        date: "2024-08-18T14:15:00Z",
-        summary:
-          "Discussed delivery timeline for pending order. Confirmed shipping address and requested expedited delivery.",
-      },
-      {
-        id: "3",
-        type: "meeting",
-        subject: "Q3 Business Planning Session",
-        date: "2024-08-15T11:00:00Z",
-        summary:
-          "Virtual meeting to discuss Q3 procurement needs. Identified opportunities for new product categories.",
-      },
-      {
-        id: "4",
-        type: "email",
-        subject: "Payment Terms Negotiation",
-        date: "2024-08-12T16:20:00Z",
-        summary:
-          "Requested extended payment terms for large orders. Agreed on 45-day payment terms for orders over $10k.",
-      },
-    ],
-  },
-  "2": {
-    id: "2",
-    name: "Michael Chen",
-    company: "Global Electronics Ltd",
-    email: "m.chen@globalelectronics.co.uk",
-    phone: "+44-20-7123-4567",
-    country: "UK",
-    status: "active",
-    lastContact: "2024-08-19T16:45:00Z",
-    totalOrders: 18,
-    totalRevenue: 38200,
-    tags: ["Regular", "Bulk Orders"],
-    notes:
-      "Reliable customer with consistent monthly orders. Interested in sustainable packaging options and eco-friendly products.",
-    interactions: [
-      {
-        id: "5",
-        type: "meeting",
-        subject: "Quarterly Business Review",
-        date: "2024-08-19T16:45:00Z",
-        summary: "Reviewed Q2 performance and discussed expansion opportunities. Positive feedback on product quality.",
-      },
-      {
-        id: "6",
-        type: "email",
-        subject: "Sustainable Packaging Initiative",
-        date: "2024-08-16T09:30:00Z",
-        summary:
-          "Discussed eco-friendly packaging options. Interested in biodegradable packaging for all future orders.",
-      },
-    ],
-  },
-  "3": {
-    id: "3",
-    name: "Emma Rodriguez",
-    company: "Innovation Hub",
-    email: "emma.r@innovationhub.de",
-    phone: "+49-30-12345678",
-    country: "Germany",
-    status: "prospect",
-    lastContact: "2024-08-21T09:20:00Z",
-    totalOrders: 15,
-    totalRevenue: 29800,
-    tags: ["New", "High Potential"],
-    notes: "Startup accelerator looking for tech accessories for their portfolio companies. High growth potential.",
-    interactions: [
-      {
-        id: "7",
-        type: "email",
-        subject: "Partnership Opportunity Discussion",
-        date: "2024-08-21T09:20:00Z",
-        summary:
-          "Discussed potential partnership for supplying tech accessories to startups in their accelerator program.",
-      },
-    ],
-  },
-}
+// Remove local mock; details now fetched via API
 
 export default function ContactDetailPage() {
   const params = useParams()
   const router = useRouter()
   const contactId = params.id as string
 
-  const [contact, setContact] = useState<Contact | null>(null)
+  const [contact, setContact] = useState<CRMContactDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [editedNotes, setEditedNotes] = useState("")
@@ -165,23 +40,11 @@ export default function ContactDetailPage() {
   useEffect(() => {
     const fetchContact = async () => {
       try {
-        // Try to fetch from API first
-        const response = await fetch(`/api/v1/supplier/crm/contacts/${contactId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setContact(data.data)
-          setEditedNotes(data.data.notes)
-        } else {
-          throw new Error("API failed")
-        }
+        const data = await crmApi.getContact(contactId)
+        setContact(data)
+        setEditedNotes(Array.isArray(data.notes) ? data.notes.join("\n") : (data as any).notes || "")
       } catch (error) {
-        const mockContact = mockContactData[contactId]
-        if (mockContact) {
-          setContact(mockContact)
-          setEditedNotes(mockContact.notes)
-        } else {
-          setContact(null)
-        }
+        setContact(null)
       } finally {
         setLoading(false)
       }
@@ -194,18 +57,11 @@ export default function ContactDetailPage() {
     if (!contact) return
 
     try {
-      const response = await fetch(`/api/v1/supplier/crm/contacts/${contactId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...contact, notes: editedNotes }),
-      })
-
-      if (response.ok) {
-        setContact({ ...contact, notes: editedNotes })
-        setIsEditing(false)
-      }
+      // TODO: Wire to API when endpoint for updating notes is available
+      setContact({ ...contact, notes: [editedNotes] } as CRMContactDetail)
+      setIsEditing(false)
     } catch (error) {
-      setContact({ ...contact, notes: editedNotes })
+      setContact({ ...contact, notes: [editedNotes] } as CRMContactDetail)
       setIsEditing(false)
     }
   }
@@ -271,13 +127,11 @@ export default function ContactDetailPage() {
             Back to CRM
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{contact.name}</h1>
-            <p className="text-muted-foreground">{contact.company}</p>
+            <h1 className="text-2xl font-bold">{contact.customer.name}</h1>
+            <p className="text-muted-foreground">{contact.customer.has_company && contact.customer.company_name ? contact.customer.company_name : ""}</p>
           </div>
         </div>
-        <Badge className={getStatusColor(contact.status)}>
-          {contact.status.charAt(0).toUpperCase() + contact.status.slice(1)}
-        </Badge>
+        {/* No discrete status in API; could infer from activity if needed */}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -295,28 +149,28 @@ export default function ContactDetailPage() {
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Email</p>
-                  <p className="text-sm text-muted-foreground">{contact.email}</p>
+                  <p className="text-sm text-muted-foreground">{contact.customer.email}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Phone</p>
-                  <p className="text-sm text-muted-foreground">{contact.phone}</p>
+                  <p className="text-sm text-muted-foreground">{contact.customer.phone}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Country</p>
-                  <p className="text-sm text-muted-foreground">{contact.country}</p>
+                  <p className="text-sm text-muted-foreground">{contact.customer.has_company && contact.customer.company_name ? contact.customer.company_name : ""}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Last Contact</p>
-                  <p className="text-sm text-muted-foreground">{new Date(contact.lastContact).toLocaleDateString()}</p>
+                  <p className="text-sm text-muted-foreground">{new Date(contact.updated_at || contact.created_at || new Date().toISOString()).toLocaleDateString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -333,20 +187,33 @@ export default function ContactDetailPage() {
                   <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Total Orders</span>
                 </div>
-                <span className="text-lg font-bold">{contact.totalOrders}</span>
+                <span className="text-lg font-bold">{contact.placed_orders}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Paid Orders</span>
+                </div>
+                <span className="text-lg font-bold">{contact.paid_orders}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Total Revenue</span>
                 </div>
-                <span className="text-lg font-bold">${contact.totalRevenue.toLocaleString()}</span>
+                <span className="text-lg font-bold">${Number(contact.total_spent).toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Avg. Order Value</span>
-                <span className="text-lg font-bold">
-                  ${Math.round(contact.totalRevenue / contact.totalOrders).toLocaleString()}
-                </span>
+                <span className="text-lg font-bold">${Number(contact.avg_order_value).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">RFQs</span>
+                <span className="text-lg font-bold">{contact.rfqs_count}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Quotes Received</span>
+                <span className="text-lg font-bold">{contact.quotes_received}</span>
               </div>
             </CardContent>
           </Card>
@@ -410,7 +277,7 @@ export default function ContactDetailPage() {
                   className="min-h-[100px]"
                 />
               ) : (
-                <p className="text-sm text-muted-foreground">{contact.notes || "No notes available"}</p>
+                <p className="text-sm text-muted-foreground">{(Array.isArray(contact.notes) ? contact.notes.join("\n") : (contact as any).notes) || "No notes available"}</p>
               )}
             </CardContent>
           </Card>
@@ -423,19 +290,18 @@ export default function ContactDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {contact.interactions.map((interaction) => (
+                {(contact.interactions || []).map((interaction) => (
                   <div key={interaction.id} className="border rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center space-x-2">
-                        {getInteractionIcon(interaction.type)}
-                        <h4 className="font-medium">{interaction.subject}</h4>
+                        {getInteractionIcon(interaction.interaction_type)}
+                        <h4 className="font-medium">{interaction.title}</h4>
                       </div>
                       <Badge variant="outline" className="text-xs">
-                        {interaction.type}
+                        {interaction.interaction_type}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">{interaction.summary}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(interaction.date).toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(interaction.created_at).toLocaleString()}</p>
                   </div>
                 ))}
               </div>

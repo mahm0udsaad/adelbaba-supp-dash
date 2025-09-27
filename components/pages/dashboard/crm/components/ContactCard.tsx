@@ -5,11 +5,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Mail, Phone, MapPin, Calendar, ShoppingCart, DollarSign, MoreHorizontal } from "lucide-react"
-import type { Contact } from "./types"
-import { getStatusColor, formatDate } from "./types"
+import type { CRMContactItem } from "@/src/services/crm-api"
+import { formatDate } from "./types"
 import { useI18n } from "@/lib/i18n/context"
 
-export function ContactCard({ contact }: { contact: Contact }) {
+export function ContactCard({ contact }: { contact: CRMContactItem }) {
   const { t, isArabic } = useI18n()
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -17,46 +17,58 @@ export function ContactCard({ contact }: { contact: Contact }) {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
+              <img
+                src={contact.customer.picture || "https://placehold.co/48x48/png?text=%20"}
+                alt={contact.customer.name}
+                className="h-12 w-12 rounded-full object-cover"
+              />
               <div>
-                <h3 className="font-semibold text-lg">{contact.name}</h3>
-                <p className="text-muted-foreground">{contact.company}</p>
+                <h3 className="font-semibold text-lg">{contact.customer.name}</h3>
+                <p className="text-muted-foreground">
+                  {contact.customer.has_company && contact.customer.company_name ? contact.customer.company_name : ""}
+                </p>
               </div>
-              <Badge className={getStatusColor(contact.status)}>
-                {contact.status === "active" ? t.active : contact.status === "prospect" ? t.prospect : t.inactive}
-              </Badge>
             </div>
 
             <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4 mb-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4" />
-                {contact.email}
+                {contact.customer.email}
               </div>
-              {contact.phone && (
+              {contact.customer.phone && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Phone className="h-4 w-4" />
-                  {contact.phone}
+                  {contact.customer.phone}
                 </div>
               )}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
-                {contact.country}
+                {contact.customer.has_company && contact.customer.company_name ? contact.customer.company_name : t.company}
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                {formatDate(contact.lastContact, isArabic)}
+                {formatDate(contact.updated_at || contact.created_at || new Date().toISOString(), isArabic)}
               </div>
             </div>
 
-            <div className="flex items-center gap-6 mb-3">
+            <div className="flex items-center gap-6 mb-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{contact.totalOrders}</span>
+                <span className="font-medium">{contact.placed_orders}</span>
                 <span className="text-sm text-muted-foreground">{t.ordersLower}</span>
               </div>
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">${contact.totalRevenue.toLocaleString()}</span>
+                <span className="font-medium">${Number(contact.total_spent).toLocaleString()}</span>
                 <span className="text-sm text-muted-foreground">{t.revenue}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{t.paid || "Paid"}</span>
+                <span className="font-medium">{contact.paid_orders}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{t.rfqs || "RFQs"}</span>
+                <span className="font-medium">{contact.rfqs_count}</span>
               </div>
             </div>
 

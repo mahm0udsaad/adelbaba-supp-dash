@@ -17,7 +17,22 @@ apiClient.interceptors.request.use(async (config) => {
     if (typeof window !== "undefined") {
       const { getSession } = await import("next-auth/react")
       const session = await getSession()
-      const token = (session as any)?.token as string | undefined
+      // Try multiple token shapes
+      const token =
+        ((session as any)?.token as string | undefined) ||
+        ((session as any)?.accessToken as string | undefined) ||
+        ((session as any)?.user?.appToken as string | undefined) ||
+        // Fallback to localStorage cache saved by auth flow
+        ((): string | undefined => {
+          try {
+            const raw = localStorage.getItem("adelbaba_auth_data")
+            if (!raw) return undefined
+            const parsed = JSON.parse(raw)
+            return parsed?.token as string | undefined
+          } catch {
+            return undefined
+          }
+        })()
       if (token) {
         config.headers = config.headers ?? {}
         config.headers.Authorization = `Bearer ${token}`
@@ -43,7 +58,10 @@ apiClient.interceptors.response.use(
         if (typeof window !== 'undefined') {
           const { getSession, signOut } = await import('next-auth/react')
           const session = await getSession()
-          const refreshedToken = (session as any)?.token
+          const refreshedToken =
+            (session as any)?.token ||
+            (session as any)?.accessToken ||
+            (session as any)?.user?.appToken
 
           if (refreshedToken) {
             originalRequest.headers = originalRequest.headers ?? {}
