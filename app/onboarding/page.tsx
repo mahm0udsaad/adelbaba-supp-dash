@@ -20,6 +20,7 @@ import { useAuth } from "@/src/contexts/auth-context"
 import { useCompany as useCompanyHook } from "@/src/hooks/use-company"
 import { factoryMediaApi, type FactoryImage } from "@/src/services/factory-media"
 import { certificatesApi, type CertificateItem, type PaginatedResponse } from "@/src/services/certificates"
+import { shipmentsApi, type ShippoCarrier } from "@/src/services/shipments"
 import BusinessProfileStep from "@/src/features/onboarding/BusinessProfileStep"
 import FactoryImagesStep from "@/src/features/onboarding/FactoryImagesStep"
 import CertificatesStep from "@/src/features/onboarding/CertificatesStep"
@@ -104,6 +105,8 @@ export default function OnboardingPage() {
     incoterms: [] as string[],
     configureLater: false,
   })
+  const [carriers, setCarriers] = useState<ShippoCarrier[]>([])
+  const [loadingCarriers, setLoadingCarriers] = useState(false)
 
   // Integrated API-backed state
   const [factoryImagesRemote, setFactoryImagesRemote] = useState<FactoryImage[]>([])
@@ -243,26 +246,35 @@ export default function OnboardingPage() {
     }
   }, [authCompletionStatus])
 
-  const shippingCompanies: ShippingCompany[] = [
-    {
-      id: "aramex",
-      name: "Aramex",
-      logo: "/images/aramex-logo.png",
-      description: "Fast and reliable international shipping",
-    },
-    {
-      id: "fedex",
-      name: "FedEx",
-      logo: "/images/fedex-logo.png",
-      description: "Express delivery worldwide",
-    },
-    {
-      id: "dhl",
-      name: "DHL",
-      logo: "/images/dhl-logo.png",
-      description: "Global express and logistics",
-    },
-  ]
+  // Load carriers and previously saved selections
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingCarriers(true)
+        const [list, saved] = await Promise.all([
+          shipmentsApi.listCarriers(),
+          shipmentsApi.getSavedCarrierIds(),
+        ])
+        console.log(list);
+        
+        setCarriers(list)
+        if (Array.isArray(saved) && saved.length > 0) {
+          setSelectedShipping(saved)
+        }
+      } catch (e) {
+        console.error("Failed to load carriers", e)
+      } finally {
+        setLoadingCarriers(false)
+      }
+    })()
+  }, [])
+
+  const shippingCompanies: ShippingCompany[] = carriers.map((c) => ({
+    id: c.object_id,
+    name: c.carrier_name || c.carrier,
+    logo: (c.carrier_images && (c.carrier_images["200"] || c.carrier_images["75"])) || "/placeholder.svg",
+    description: c.metadata || (c.carrier ? String(c.carrier).toUpperCase() : ""),
+  }))
 
   const steps: OnboardingStep[] = [
     {
@@ -362,8 +374,8 @@ export default function OnboardingPage() {
           setUploading((prev) => prev.map((u) => (u.id === item.id ? { ...u, status: 'uploading', progress: 0 } : u)))
           
           try {
-            // Upload single file and get immediate response
-            const result = await factoryMediaApi.update(
+            // Upload single file
+            await factoryMediaApi.update(
               { add: [item.file] },
               {
                 signal: item.controller.signal,
@@ -375,27 +387,23 @@ export default function OnboardingPage() {
                 },
               }
             )
-            
-            // Add successful upload to our collection
-            if (result && result.length > 0) {
-              // The API returns the complete updated list, not just the new image
-              // Find the newly uploaded image by comparing with previous state
-              const newImages = result.filter(img => 
-                !factoryImagesRemote.some(existing => existing.id === img.id) &&
-                !uploadedImages.some(existing => existing.id === img.id)
-              )
-              
-              if (newImages.length > 0) {
-                const newImage = newImages[0] // Take the first new image
-                uploadedImages.push(newImage)
-                // Update the gallery with the complete result from API
-                setFactoryImagesRemote(result)
+
+            // Immediately refetch latest images to avoid flicker and ensure server truth
+            try {
+              const latest = await factoryMediaApi.list()
+              setFactoryImagesRemote(latest)
+              // Best-effort: consider this item counted as uploaded for the final toast
+              if (latest && latest.length >= (factoryImagesRemote?.length || 0)) {
+                uploadedImages.push({ id: item.id, file_name: item.name, url: '' } as any)
               }
+            } catch (refreshErr) {
+              // Non-fatal: UI still shows optimistic preview until batch ends
+              console.warn('Failed to refresh factory images after upload', refreshErr)
             }
-            
+
             // Mark as done
             setUploading((prev) => prev.map((u) => (u.id === item.id ? { ...u, status: 'done', progress: 100 } : u)))
-            
+
           } catch (e: any) {
             const isAbort = e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED' || e?.message?.includes('canceled')
             const status: UploadItem['status'] = isAbort ? 'canceled' : 'error'
@@ -511,6 +519,38 @@ export default function OnboardingPage() {
         if (certificatesRemote.length === 0) {
           // Optional step; inform user but allow continue
           toast({ title: "Certificates optional", description: "You can add certificates later from the dashboard." })
+        }
+      } else if (stepId === "shipping_configuration") {
+        if (!shippingConfig.configureLater) {
+          if (selectedShipping.length === 0) {
+            toast({ title: "Select carriers", description: "Choose at least one carrier or select 'configure later'.", variant: "destructive" })
+            setIsLoading(false)
+            return
+          }
+          try {
+            await shipmentsApi.setupCarriers(selectedShipping)
+            toast({ title: "Carriers saved", description: "Your shipping carriers have been configured." })
+            const current = authData.completionStatus || {
+              profile_completed: false,
+              shipping_configured: false,
+              certificates_uploaded: false,
+              first_product_added: false,
+            }
+            if (!current.shipping_configured) {
+              updateAuthData({ completionStatus: { ...current, shipping_configured: true } })
+            }
+          } catch (e: any) {
+            let desc = "Failed to save carriers."
+            const data = e?.response?.data
+            if (data) {
+              if (typeof data === "string") desc = data
+              else if (typeof data?.message === "string") desc = data.message
+            } else if (e?.message) {
+              desc = e.message
+            }
+            toast({ title: "Save failed", description: desc, variant: "destructive" })
+            throw e
+          }
         }
       }
       // Mark step complete and advance to the next step
@@ -691,6 +731,7 @@ export default function OnboardingPage() {
             setSelectedShipping={setSelectedShipping}
             shippingConfig={shippingConfig}
             setShippingConfig={setShippingConfig}
+            loading={loadingCarriers}
           />
         )
 
@@ -705,7 +746,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-amber-50 p-4">
+    <div className="overflow-y-scroll h-screen bg-amber-50 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 animate-in fade-in-0 slide-in-from-top-4 duration-1000">

@@ -1,13 +1,35 @@
 import apiClient from "@/lib/axios"
 
+export interface QuoteRFQSummary {
+  id: number
+  title: string
+  description: string
+  status: string
+  created_at: string
+  updated_at: string
+  supplier_quotes_count: number | null
+}
+
+export interface QuoteAttachment {
+  id: number
+  file_name: string
+  size: string
+  human_readable_size: string
+  url: string
+  type: string
+}
+
 export interface QuoteListItem {
-  id: number | string
-  rfq_id?: number | string
-  message?: string
-  currency?: string
-  lead_time_days?: number
-  status?: string
-  created_at?: string
+  id: number
+  message: string
+  currency: string
+  lead_time_days: number
+  status: string
+  submitted_at: string
+  withdrawn_at: string | null
+  created_at: string
+  updated_at: string
+  rfq: QuoteRFQSummary
 }
 
 export interface PaginatedResponse<T> {

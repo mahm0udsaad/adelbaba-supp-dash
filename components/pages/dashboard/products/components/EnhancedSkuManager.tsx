@@ -29,6 +29,18 @@ interface SkuAttribute {
   image?: File; // Required if type is "image"
 }
 
+type MassUnit = "g" | "kg" | "lb" | "oz";
+type DistanceUnit = "cm" | "in" | "ft" | "m" | "mm" | "yd";
+
+interface SkuPackageDetails {
+  mass_unit: MassUnit;
+  weight: number;
+  distance_unit: DistanceUnit;
+  height: number;
+  length: number;
+  width: number;
+}
+
 interface SkuInventoryWarehouse {
   warehouse_id: number;
   on_hand: number;
@@ -41,6 +53,7 @@ interface SkuInventoryWarehouse {
 interface EnhancedSku {
   code: string;
   price: number;
+  package_details: SkuPackageDetails;
   inventory: {
     warehouses: SkuInventoryWarehouse[];
   };
@@ -120,6 +133,14 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
       return {
         code: `SKU_${code}`,
         price: 0,
+        package_details: {
+          mass_unit: 'lb',
+          weight: 1,
+          distance_unit: 'in',
+          height: 1,
+          length: 1,
+          width: 1,
+        },
         inventory: {
           warehouses: mockWarehouses.map(warehouse => ({
             warehouse_id: warehouse.id,
@@ -339,6 +360,105 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
                             value={sku.price} 
                             onChange={(e) => updateSku(skuIndex, 'price', Number(e.target.value) || 0)} 
                           />
+                        </div>
+                      </div>
+
+                      {/* Package Details */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">{t.packageDetails || 'Package Details'}</Label>
+                        <div className="grid grid-cols-6 gap-3">
+                          <div className="col-span-2">
+                            <Label className="text-xs">{t.massUnit || 'Mass Unit'}</Label>
+                            <Select
+                              value={sku.package_details.mass_unit}
+                              onValueChange={(v: any) => {
+                                const newSkus = [...skus];
+                                (newSkus[skuIndex].package_details.mass_unit as any) = v;
+                                setSkus(newSkus);
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="g">g</SelectItem>
+                                <SelectItem value="kg">kg</SelectItem>
+                                <SelectItem value="lb">lb</SelectItem>
+                                <SelectItem value="oz">oz</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs">{t.weight || 'Weight'}</Label>
+                            <Input
+                              type="number"
+                              value={sku.package_details.weight}
+                              onChange={(e) => {
+                                const newSkus = [...skus];
+                                newSkus[skuIndex].package_details.weight = Number(e.target.value) || 0;
+                                setSkus(newSkus);
+                              }}
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <Label className="text-xs">{t.distanceUnit || 'Distance Unit'}</Label>
+                            <Select
+                              value={sku.package_details.distance_unit}
+                              onValueChange={(v: any) => {
+                                const newSkus = [...skus];
+                                (newSkus[skuIndex].package_details.distance_unit as any) = v;
+                                setSkus(newSkus);
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="cm">cm</SelectItem>
+                                <SelectItem value="in">in</SelectItem>
+                                <SelectItem value="ft">ft</SelectItem>
+                                <SelectItem value="m">m</SelectItem>
+                                <SelectItem value="mm">mm</SelectItem>
+                                <SelectItem value="yd">yd</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs">{t.height || 'Height'}</Label>
+                            <Input
+                              type="number"
+                              value={sku.package_details.height}
+                              onChange={(e) => {
+                                const newSkus = [...skus];
+                                newSkus[skuIndex].package_details.height = Number(e.target.value) || 0;
+                                setSkus(newSkus);
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">{t.length || 'Length'}</Label>
+                            <Input
+                              type="number"
+                              value={sku.package_details.length}
+                              onChange={(e) => {
+                                const newSkus = [...skus];
+                                newSkus[skuIndex].package_details.length = Number(e.target.value) || 0;
+                                setSkus(newSkus);
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">{t.width || 'Width'}</Label>
+                            <Input
+                              type="number"
+                              value={sku.package_details.width}
+                              onChange={(e) => {
+                                const newSkus = [...skus];
+                                newSkus[skuIndex].package_details.width = Number(e.target.value) || 0;
+                                setSkus(newSkus);
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
 

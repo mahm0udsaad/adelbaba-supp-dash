@@ -33,10 +33,23 @@ import {
   Mail,
   Truck,
   CreditCard,
+  AlertCircle,
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "@/hooks/use-toast"
-import { getRFQDetails, submitQuote, type RFQ } from "@/src/services/rfq-api"
+import { getRFQDetails, type RFQ } from "@/src/services/rfq-api"
+import { createQuote, listQuotes, withdrawQuote, type QuoteListItem } from "@/src/services/quotes-api"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 // Helper function to normalize API data for display
 const normalizeRFQDetail = (rfq: RFQ): RFQ & {
@@ -83,16 +96,16 @@ export default function RFQDetailPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [rfq, setRfq] = useState<ReturnType<typeof normalizeRFQDetail> | null>(null)
+  const [userQuote, setUserQuote] = useState<QuoteListItem | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [showQuoteDialog, setShowQuoteDialog] = useState(false)
   const [language] = useState<"en" | "ar">("en")
 
   const [quoteForm, setQuoteForm] = useState({
-    price: "",
-    moq: "",
-    lead_time: "",
-    notes: "",
+    message: "",
+    currency: "USD",
+    lead_time_days: "",
     attachments: [] as File[],
   })
 
@@ -101,10 +114,16 @@ export default function RFQDetailPage() {
 
   useEffect(() => {
     fetchRFQ()
+    fetchUserQuote()
     if (showQuoteAction) {
       setShowQuoteDialog(true)
     }
   }, [params.id])
+
+  // Open/close the create-quote dialog when the action query changes while on the page
+  useEffect(() => {
+    setShowQuoteDialog(!!showQuoteAction)
+  }, [showQuoteAction])
 
   const fetchRFQ = async () => {
     try {
@@ -129,14 +148,47 @@ export default function RFQDetailPage() {
     }
   }
 
+  const fetchUserQuote = async () => {
+    try {
+      // Fetch all quotes and find the one for this RFQ
+      const quotesResponse = await listQuotes({ page: 1 })
+      const quote = quotesResponse.data.find((q) => q.rfq.id === Number(params.id))
+      setUserQuote(quote || null)
+    } catch (error) {
+      console.error("Failed to fetch user quote:", error)
+      // Don't show error toast as this is not critical
+    }
+  }
+
+  const handleWithdraw = async () => {
+    if (!userQuote) return
+
+    try {
+      await withdrawQuote(userQuote.id)
+      toast({
+        title: isArabic ? "تم السحب" : "Quote Withdrawn",
+        description: isArabic ? "تم سحب العرض بنجاح" : "Your quote has been withdrawn successfully",
+      })
+      // Update local state
+      setUserQuote({ ...userQuote, status: "Withdrawn", withdrawn_at: new Date().toISOString() })
+    } catch (error: any) {
+      console.error("Error withdrawing quote:", error)
+      toast({
+        title: isArabic ? "خطأ" : "Error",
+        description: error?.response?.data?.message || error?.message || (isArabic ? "فشل سحب العرض" : "Failed to withdraw quote"),
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleSubmitQuote = async (e: React.FormEvent) => {
     e.preventDefault()
     
     // Validate required fields
-    if (!quoteForm.price) {
+    if (!quoteForm.message || !quoteForm.currency) {
       toast({
         title: isArabic ? "خطأ" : "Error",
-        description: isArabic ? "السعر مطلوب" : "Price is required",
+        description: isArabic ? "الرسالة والعملة مطلوبة" : "Message and currency are required",
         variant: "destructive",
       })
       return
@@ -145,12 +197,11 @@ export default function RFQDetailPage() {
     setSubmitting(true)
 
     try {
-      await submitQuote({
+      await createQuote({
         rfq_id: String(params.id),
-        price: parseFloat(quoteForm.price),
-        moq: quoteForm.moq ? parseInt(quoteForm.moq) : undefined,
-        lead_time: quoteForm.lead_time,
-        notes: quoteForm.notes,
+        message: quoteForm.message,
+        currency: quoteForm.currency,
+        lead_time_days: quoteForm.lead_time_days ? parseInt(quoteForm.lead_time_days) : undefined,
         attachments: quoteForm.attachments,
       })
 
@@ -162,12 +213,13 @@ export default function RFQDetailPage() {
       setShowQuoteDialog(false)
       // Reset form
       setQuoteForm({
-        price: "",
-        moq: "",
-        lead_time: "",
-        notes: "",
+        message: "",
+        currency: "USD",
+        lead_time_days: "",
         attachments: [],
       })
+      // Refresh user quote
+      fetchUserQuote()
       router.push("/dashboard/rfq")
     } catch (error: any) {
       console.error('Quote submission error:', error)
@@ -228,14 +280,49 @@ export default function RFQDetailPage() {
           </div>
         </div>
 
-        {rfq.status === "open" && (
-          <Dialog open={showQuoteDialog} onOpenChange={setShowQuoteDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Send className="h-4 w-4 mr-2" />
-                {isArabic ? "قدم عرض سعر" : "Submit Quote"}
+        {rfq.status?.toLowerCase?.() === "open" && (
+          <div className="flex items-center gap-2">
+            {userQuote && userQuote.status === "Submitted" ? (
+              // User has an active quote - show withdraw button
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    {isArabic ? "سحب العرض" : "Withdraw Quote"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{isArabic ? "تأكيد السحب" : "Confirm Withdrawal"}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {isArabic
+                        ? "هل أنت متأكد من سحب هذا العرض؟ لن تتمكن من التراجع عن هذا الإجراء."
+                        : "Are you sure you want to withdraw this quote? This action cannot be undone."}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{isArabic ? "إلغاء" : "Cancel"}</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleWithdraw}>
+                      {isArabic ? "سحب العرض" : "Withdraw Quote"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : userQuote ? (
+              // User has a quote but it's not in Submitted status
+              <Button variant="outline" disabled>
+                <FileText className="h-4 w-4 mr-2" />
+                {isArabic ? `العرض: ${userQuote.status}` : `Quote: ${userQuote.status}`}
               </Button>
-            </DialogTrigger>
+            ) : (
+              // No quote yet - show create button
+              <Dialog open={showQuoteDialog} onOpenChange={setShowQuoteDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Send className="h-4 w-4 mr-2" />
+                    {isArabic ? "تقديم عرض سعر" : "Create Quote"}
+                  </Button>
+                </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>{isArabic ? "تقديم عرض سعر" : "Submit Quote"}</DialogTitle>
@@ -247,53 +334,41 @@ export default function RFQDetailPage() {
               <form onSubmit={handleSubmitQuote} className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="price">{isArabic ? "سعر الوحدة" : "Unit Price"} *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={quoteForm.price}
-                      onChange={(e) => setQuoteForm({ ...quoteForm, price: e.target.value })}
+                    <Label htmlFor="message">{isArabic ? "الرسالة" : "Message"} *</Label>
+                    <Textarea
+                      id="message"
+                      placeholder={isArabic ? "اكتب رسالتك للمشتري" : "Write your message to the buyer"}
+                      value={quoteForm.message}
+                      onChange={(e) => setQuoteForm({ ...quoteForm, message: e.target.value })}
+                      rows={4}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="moq">{isArabic ? "الحد الأدنى للطلب" : "MOQ"}</Label>
+                    <Label htmlFor="currency">{isArabic ? "العملة" : "Currency"} *</Label>
                     <Input
-                      id="moq"
-                      type="number"
-                      placeholder="100"
-                      value={quoteForm.moq}
-                      onChange={(e) => setQuoteForm({ ...quoteForm, moq: e.target.value })}
+                      id="currency"
+                      placeholder="USD"
+                      value={quoteForm.currency}
+                      onChange={(e) => setQuoteForm({ ...quoteForm, currency: e.target.value })}
+                      required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="lead_time">{isArabic ? "مدة التسليم" : "Lead Time"}</Label>
+                  <Label htmlFor="lead_time_days">{isArabic ? "مدة التسليم (أيام)" : "Lead Time (days)"}</Label>
                   <Input
-                    id="lead_time"
-                    placeholder={isArabic ? "مثال: 15 يوم" : "e.g., 15 days"}
-                    value={quoteForm.lead_time}
-                    onChange={(e) => setQuoteForm({ ...quoteForm, lead_time: e.target.value })}
+                    id="lead_time_days"
+                    type="number"
+                    placeholder={isArabic ? "مثال: 15" : "e.g., 15"}
+                    value={quoteForm.lead_time_days}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, lead_time_days: e.target.value })}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {isArabic ? "ادخل مدة التسليم بالأيام مثل '30 يوم'" : "Enter lead time like '30 days' or '2 weeks'"}
-                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="notes">{isArabic ? "ملاحظات إضافية" : "Additional Notes"}</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder={isArabic ? "أي معلومات إضافية عن عرضك..." : "Any additional information about your quote..."}
-                    value={quoteForm.notes}
-                    onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })}
-                    rows={4}
-                  />
-                </div>
+                {/* Notes field removed to match API spec */}
 
                 <div className="space-y-2">
                   <Label htmlFor="attachments">{isArabic ? "المرفقات" : "Attachments"}</Label>
@@ -346,10 +421,9 @@ export default function RFQDetailPage() {
                       setShowQuoteDialog(false)
                       // Reset form when closing
                       setQuoteForm({
-                        price: "",
-                        moq: "",
-                        lead_time: "",
-                        notes: "",
+                        message: "",
+                        currency: "USD",
+                        lead_time_days: "",
                         attachments: [],
                       })
                     }}
@@ -358,7 +432,7 @@ export default function RFQDetailPage() {
                   >
                     {isArabic ? "إلغاء" : "Cancel"}
                   </Button>
-                  <Button type="submit" disabled={submitting || !quoteForm.price}>
+                  <Button type="submit" disabled={submitting || !quoteForm.message || !quoteForm.currency}>
                     {submitting
                       ? isArabic
                         ? "جاري الإرسال..."
@@ -371,6 +445,8 @@ export default function RFQDetailPage() {
               </form>
             </DialogContent>
           </Dialog>
+            )}
+          </div>
         )}
       </div>
 
@@ -387,7 +463,7 @@ export default function RFQDetailPage() {
                 <Badge
                   className={`${rfq.status === "open" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
                 >
-                  {rfq.status.charAt(0).toUpperCase() + rfq.status.slice(1)}
+                  {rfq.status ? rfq.status.charAt(0).toUpperCase() + rfq.status.slice(1) : 'Unknown'}
                 </Badge>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4 text-muted-foreground" />

@@ -21,9 +21,10 @@ type Props = {
   setSelectedShipping: (updater: any) => void
   shippingConfig: { handlingTime: string; shipsFrom: string; incoterms: string[]; configureLater: boolean }
   setShippingConfig: (updater: any) => void
+  loading?: boolean
 }
 
-export default function ShippingConfigurationStep({ shippingCompanies, selectedShipping, setSelectedShipping, shippingConfig, setShippingConfig }: Props) {
+export default function ShippingConfigurationStep({ shippingCompanies, selectedShipping, setSelectedShipping, shippingConfig, setShippingConfig, loading = false }: Props) {
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -35,6 +36,29 @@ export default function ShippingConfigurationStep({ shippingCompanies, selectedS
         <div>
           <Label className="text-base font-medium text-gray-900">Preferred shipping partners (optional)</Label>
           <div className="grid gap-3 mt-3">
+            {loading && shippingCompanies.length === 0 && (
+              <>
+                {[0,1,2,3,4,5].map((i) => (
+                  <Card key={`skeleton-${i}`} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-gray-100 animate-pulse" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-40 bg-gray-100 rounded animate-pulse" />
+                          <div className="h-3 w-64 bg-gray-100 rounded animate-pulse" />
+                        </div>
+                        <div className="w-5 h-5 bg-gray-100 rounded-full animate-pulse" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            )}
+
+            {!loading && shippingCompanies.length === 0 && (
+              <div className="p-4 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg">No carriers available at the moment.</div>
+            )}
+
             {shippingCompanies.map((company) => (
               <Card
                 key={company.id}

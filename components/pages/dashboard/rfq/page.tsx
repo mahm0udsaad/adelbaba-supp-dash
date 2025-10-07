@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, Search, Filter, Eye, DollarSign, MapPin, Building, Calendar, TrendingUp, RefreshCw } from "lucide-react"
+import { FileText, Search, Filter, Eye, DollarSign, MapPin, Building, Calendar, TrendingUp, RefreshCw, AlertCircle } from "lucide-react"
+import { RFQCard } from "./RFQCard"
 import Link from "next/link"
 import { useApiWithFallback } from "@/hooks/useApiWithFallback"
 import { listQuotes, withdrawQuote } from "@/src/services/quotes-api"
@@ -225,13 +226,13 @@ export default function RFQPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Link href={`/dashboard/rfq/${q.rfq_id || ""}`}>
+                      <Link href={`/dashboard/rfq/${q.rfq?.id ?? ""}`}>
                         <Button size="sm" variant="outline" className="bg-transparent">
                           <Eye className="h-4 w-4 mr-2" />
                           {isArabic ? "عرض الطلب" : "View RFQ"}
                         </Button>
                       </Link>
-                      {q.status !== "withdrawn" && q.status !== "awarded" && (
+                      {q.status?.toLowerCase() !== "withdrawn" && q.status?.toLowerCase() !== "awarded" && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -245,7 +246,7 @@ export default function RFQPage() {
                               // Optimistic update and refresh metrics
                               setQuotesResponse((prev: any) => {
                                 if (!prev) return prev
-                                const next = { ...prev, data: prev.data.map((it: any) => (it.id === q.id ? { ...it, status: "withdrawn" } : it)) }
+                                const next = { ...prev, data: prev.data.map((it: any) => (it.id === q.id ? { ...it, status: "Withdrawn" } : it)) }
                                 return next
                               })
                               // Refresh dashboard metrics
@@ -474,96 +475,34 @@ export default function RFQPage() {
           </Card>
         ) : (
           processedRFQs.map((rfq) => {
-            const expiresAt = rfq.expires_at;
+            const expiresAt = rfq.expires_at
             return (
-            <Card key={rfq.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-lg font-semibold text-foreground">{rfq.title}</h3>
-                        <Badge className={statusColors[rfq.status as keyof typeof statusColors] || "bg-gray-100 text-gray-800 border-gray-200"}>
-                        {isArabic
-                          ? rfq.status === "open"
-                            ? "مفتوح"
-                            : rfq.status === "quoted"
-                              ? "تم الرد"
-                              : rfq.status === "awarded"
-                                ? "فائز"
-                                : rfq.status === "expired"
-                                  ? "منتهي"
-                                  : "مغلق"
-                            : (rfq.status ? rfq.status.charAt(0).toUpperCase() + rfq.status.slice(1) : 'Unknown')}
-                      </Badge>
-                        {rfq.priority && (
-                          <Badge variant="outline" className={priorityColors[rfq.priority as keyof typeof priorityColors] || "bg-gray-100 text-gray-600"}>
-                        {isArabic
-                          ? rfq.priority === "high"
-                            ? "عالي"
-                            : rfq.priority === "medium"
-                              ? "متوسط"
-                              : "منخفض"
-                          : rfq.priority.charAt(0).toUpperCase() + rfq.priority.slice(1)}
-                      </Badge>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                      <div className="flex items-center gap-1">
-                        <Building className="h-4 w-4" />
-                        {rfq.buyerCompany}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                          {rfq.country || 'Unknown'}
-                      </div>
-                        {expiresAt && (
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                            {getTimeRemaining(expiresAt)}
-                          </div>
-                        )}
-                    </div>
-
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{rfq.description || 'No description available'}</p>
-
-                    <div className="flex items-center gap-6 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">{isArabic ? "الكمية المطلوبة:" : "Target Qty:"}</span>
-                          <span className="font-medium ml-1">{rfq.targetQty?.toLocaleString() || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">{isArabic ? "السعر المستهدف:" : "Target Price:"}</span>
-                        <span className="font-medium ml-1 text-primary">
-                            {rfq.targetPrice ? `$${rfq.targetPrice}/${isArabic ? "قطعة" : "unit"}` : 'N/A'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">{isArabic ? "عروض الأسعار:" : "Quotes:"}</span>
-                          <span className="font-medium ml-1">{rfq.quotesCount || 0}</span>
-                        </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 ml-4">
-                      <Link href={`/dashboard/rfq/${rfq.id}`}>
-                      <Button size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        {isArabic ? "عرض التفاصيل" : "View Details"}
-                      </Button>
-                    </Link>
-                    {rfq.status === "open" && (
-                        <Link href={`/dashboard/rfq/${rfq.id}?action=quote`}>
-                        <Button size="sm" variant="outline" className="bg-transparent">
-                          <DollarSign className="h-4 w-4 mr-2" />
-                          {isArabic ? "قدم عرض سعر" : "Submit Quote"}
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              <RFQCard
+                key={rfq.id}
+                rfq={rfq as any}
+                isArabic={isArabic}
+                expiresAt={expiresAt}
+                quotesResponse={quotesResponse as any}
+                onWithdraw={async (quoteId: number) => {
+                  try {
+                    await withdrawQuote(quoteId)
+                    toast({
+                      title: isArabic ? "تم السحب" : "Quote Withdrawn",
+                      description: isArabic ? "تم سحب العرض بنجاح" : "Quote withdrawn successfully",
+                    })
+                    refetchQuotes()
+                    fetchDashboardMetrics()
+                  } catch (err: any) {
+                    console.error("Error withdrawing quote:", err)
+                    toast({
+                      title: isArabic ? "خطأ" : "Error",
+                      description:
+                        err?.response?.data?.message || err?.message || (isArabic ? "فشل سحب العرض" : "Failed to withdraw quote"),
+                      variant: "destructive",
+                    })
+                  }
+                }}
+              />
             )
           })
         )}

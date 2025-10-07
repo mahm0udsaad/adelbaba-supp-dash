@@ -8,11 +8,15 @@ import { AddContactDialog } from "./components/AddContactDialog"
 import { ContactsList } from "./components/ContactsList"
 import type { NewContactFormData } from "./components/types"
 import { useI18n } from "@/lib/i18n/context"
-import { listContacts, type CRMContactItem, type CRMListMeta } from "@/src/services/crm-api"
+import { listContacts, exportContacts, type CRMContactItem, type CRMListMeta } from "@/src/services/crm-api"
 
 export default function CRMPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [sortBy, setSortBy] = useState<string>("-updated_at")
+  const [buyerType, setBuyerType] = useState<string>("")
+  const [hasOrders, setHasOrders] = useState<boolean | undefined>(undefined)
+  const [tags, setTags] = useState<string>("")
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [contacts, setContacts] = useState<CRMContactItem[]>([])
   const [meta, setMeta] = useState<CRMListMeta>({ current_page: 1, per_page: 15, total: 0 })
@@ -28,7 +32,16 @@ export default function CRMPage() {
       setLoading(true)
       setError(null)
       try {
-        const res = await listContacts({ page, per_page: perPage, search: searchTerm, status: statusFilter !== "all" ? statusFilter : undefined })
+        const res = await listContacts({
+          page,
+          per_page: perPage,
+          search: searchTerm,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+          sort_by: sortBy || undefined,
+          buyer_type: buyerType || undefined,
+          has_orders: typeof hasOrders === "boolean" ? String(hasOrders) : undefined,
+          tags: tags || undefined,
+        })
         if (!isMounted) return
         setContacts(res.data)
         setMeta(res.meta)
@@ -45,7 +58,7 @@ export default function CRMPage() {
     return () => {
       isMounted = false
     }
-  }, [page, perPage, searchTerm, statusFilter])
+  }, [page, perPage, searchTerm, statusFilter, sortBy, buyerType, hasOrders, tags])
 
   const handleAddContact = async (form: NewContactFormData) => {
     try {
@@ -69,15 +82,44 @@ export default function CRMPage() {
     }
   }
 
+  const handleExport = async () => {
+    try {
+      const blob = await exportContacts({ format: "xlsx" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `contacts-${Date.now()}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      toast({ title: t.error, description: "Failed to export" })
+    }
+  }
+
   return (
     <div className="p-4 space-y-6">
       <CRMHeader onAddContact={() => setShowAddDialog(true)} />
+      <div className="flex justify-end">
+        <button className="px-3 py-1 border rounded" onClick={handleExport} disabled={loading}>
+          {t.export || "Export"}
+        </button>
+      </div>
 
       <CRMFilters
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        buyerType={buyerType}
+        setBuyerType={setBuyerType}
+        hasOrders={hasOrders as any}
+        setHasOrders={setHasOrders as any}
+        tags={tags}
+        setTags={setTags}
       />
 
       {error && (

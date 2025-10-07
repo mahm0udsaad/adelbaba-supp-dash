@@ -103,11 +103,11 @@ export async function listMarketRFQs(filters: RFQFilters = {}): Promise<Paginate
 }
 
 /**
- * View RFQ (Market): GET /api/v1/company/rfqs/{id}
+ * View RFQ (Market): GET /api/v1/company/market/rfqs/{id}
  * Returns details for a specific RFQ.
  */
 export async function getRFQDetails(id: string | number): Promise<{ data: RFQ } | RFQ> {
-  const response = await apiClient.get(`/v1/company/rfqs/${id}`)
+  const response = await apiClient.get(`/v1/company/market/rfqs/${id}`)
   return response.data
 }
 

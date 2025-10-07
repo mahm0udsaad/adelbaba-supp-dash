@@ -1,10 +1,8 @@
 "use client"
 
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { X, UploadCloud } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/context';
 
@@ -24,6 +22,9 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
       onNewFiles(Array.from(e.target.files));
     }
   };
+  const handleBrowseClick = () => {
+    document.getElementById('file-upload')?.click();
+  };
 
   return (
     <Card>
@@ -34,10 +35,10 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
         <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center">
           <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
           <p className="mt-4 text-muted-foreground">{t.dragAndDropOrClick}</p>
-          <Input id="file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} />
-          <Label htmlFor="file-upload" className="mt-2 inline-block bg-primary text-primary-foreground px-4 py-2 rounded-md cursor-pointer">
+          <Input id="file-upload" type="file" accept="image/*,video/*" multiple className="sr-only" onChange={handleFileChange} />
+          <Button  type="button" onClick={handleBrowseClick} className="mt-2 inline-block bg-primary text-primary-foreground px-4 py-2 rounded-md cursor-pointer">
             {t.browseFiles}
-          </Label>
+          </Button>
         </div>
         {(existingMedia.length > 0 || newFiles.length > 0) && (
           <div className="mt-6 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">

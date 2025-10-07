@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useI18n } from "@/lib/i18n/context"
 import { ProductDetail } from "@/src/services/types/product-types"
+import { listWarehouses, Warehouse } from "@/src/services/inventory-api"
 import { MediaUpload } from "./MediaUpload"
 import { PricingTiered } from "./PricingTiered"
 import { EnhancedSkuManager } from "./EnhancedSkuManager"
@@ -299,6 +300,8 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
   const [tieredPrices, setTieredPrices] = useState<{ min_quantity: number; price: number }[]>([])
   const [enhancedSkus, setEnhancedSkus] = useState<any[]>([])
   const [content, setContent] = useState<any>(null)
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [loadingWarehouses, setLoadingWarehouses] = useState<boolean>(false)
 
   // Auto-fill function for development
   const fillSampleData = () => {
@@ -402,6 +405,22 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
       }
     }
   }, [initialData])
+
+  // Load warehouses for SKU inventory selection
+  useEffect(() => {
+    const fetchWarehouses = async () => {
+      try {
+        setLoadingWarehouses(true)
+        const res = await listWarehouses()
+        setWarehouses(res.data || [])
+      } catch (e) {
+        // Non-blocking: keep defaults if fetch fails
+      } finally {
+        setLoadingWarehouses(false)
+      }
+    }
+    fetchWarehouses()
+  }, [])
 
   // Clear errors when user starts typing
   useEffect(() => {
@@ -518,6 +537,15 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
           // Required fields
           if (sku.code) fd.append(`skus[${skuIndex}][code]`, String(sku.code))
           if (typeof sku.price !== 'undefined') fd.append(`skus[${skuIndex}][price]`, String(sku.price))
+          // Package details
+          if (sku.package_details) {
+            if (sku.package_details.mass_unit) fd.append(`skus[${skuIndex}][package_details][mass_unit]`, String(sku.package_details.mass_unit))
+            if (typeof sku.package_details.weight !== 'undefined') fd.append(`skus[${skuIndex}][package_details][weight]`, String(sku.package_details.weight))
+            if (sku.package_details.distance_unit) fd.append(`skus[${skuIndex}][package_details][distance_unit]`, String(sku.package_details.distance_unit))
+            if (typeof sku.package_details.height !== 'undefined') fd.append(`skus[${skuIndex}][package_details][height]`, String(sku.package_details.height))
+            if (typeof sku.package_details.length !== 'undefined') fd.append(`skus[${skuIndex}][package_details][length]`, String(sku.package_details.length))
+            if (typeof sku.package_details.width !== 'undefined') fd.append(`skus[${skuIndex}][package_details][width]`, String(sku.package_details.width))
+          }
           
           // Inventory by warehouses
           if (sku.inventory?.warehouses) {
@@ -570,7 +598,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
     switch (priceType) {
       case "range": return <PricingRange range={rangePrice} setRange={setRangePrice} errors={errors} />
       case "tiered": return <PricingTiered tiers={tieredPrices} setTiers={setTieredPrices} />
-      case "sku": return <EnhancedSkuManager skus={enhancedSkus} setSkus={setEnhancedSkus} />
+      case "sku": return <EnhancedSkuManager skus={enhancedSkus} setSkus={setEnhancedSkus} warehouses={warehouses} />
       default: return null
     }
   }

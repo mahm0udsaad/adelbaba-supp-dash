@@ -2,9 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Eye, MousePointer, TrendingUp, DollarSign, Target, Calendar, BarChart3, Pause, Play } from "lucide-react"
+import { Eye, MousePointer, TrendingUp, DollarSign, Target, Calendar, BarChart3, Pause, Play, FileDown, Trash2 } from "lucide-react"
 import type { Ad } from "./types"
 import { useI18n } from "@/lib/i18n/context"
+import { adsApi } from "@/src/services/ads-api"
+import { useState } from "react"
 
 interface AdCardProps {
   ad: Ad
@@ -34,6 +36,39 @@ function formatDate(dateString: string, isArabic: boolean) {
 
 export function AdCard({ ad, isArabic }: AdCardProps) {
   const { t } = useI18n()
+  const [busy, setBusy] = useState(false)
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+  }
+
+  const handleExportOne = async () => {
+    try {
+      setBusy(true)
+      const blob = await adsApi.exportOne(ad.id, { format: "xlsx" })
+      downloadBlob(blob, `ad-${ad.id}.xlsx`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      setBusy(true)
+      await adsApi.delete(ad.id)
+      // Simple UX: reload page data; relying on parent refetch on route.
+      window.location.reload()
+    } finally {
+      setBusy(false)
+    }
+  }
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
@@ -48,6 +83,12 @@ export function AdCard({ ad, isArabic }: AdCardProps) {
             </Badge>
             <Button variant="ghost" size="sm">
               {ad.status === "active" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleExportOne} disabled={busy}>
+              <FileDown className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleDelete} disabled={busy}>
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>

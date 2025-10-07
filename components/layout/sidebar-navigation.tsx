@@ -9,6 +9,7 @@ import {
   FileText,
   ShoppingCart,
   Package,
+  Boxes,
   Crown,
   BarChart3,
   Users,
@@ -16,13 +17,16 @@ import {
   Award,
   MessageSquare,
   Settings,
+  DollarSign,
 } from "lucide-react"
 
 const sidebarItems = [
   { icon: LayoutDashboard, key: "dashboard" as const, href: "/dashboard" },
   { icon: FileText, key: "rfqs" as const, href: "/dashboard/rfq" },
+  { icon: DollarSign, key: "quotes" as const, href: "/dashboard/quotes" },
   { icon: ShoppingCart, key: "orders" as const, href: "/dashboard/orders" },
   { icon: Package, key: "products" as const, href: "/dashboard/products" },
+  { icon: Boxes, key: "inventory" as const, href: "/dashboard/inventory" },
   { icon: Crown, key: "membership" as const, href: "/dashboard/membership" },
   { icon: BarChart3, key: "analytics" as const, href: "/dashboard/analytics" },
   { icon: Users, key: "crm" as const, href: "/dashboard/crm" },

@@ -4,6 +4,7 @@ export const en: TranslationKeys = {
   // Navigation
   dashboard: "Dashboard",
   rfqs: "RFQs",
+  quotes: "My Quotes",
   orders: "Orders",
   products: "Products",
   membership: "Membership",

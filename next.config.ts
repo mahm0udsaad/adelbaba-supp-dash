@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ["api.adil-baba.com"],
+    domains: ["api.adil-baba.com", "shippo-static-v2.s3.amazonaws.com"],
   },
 }
 

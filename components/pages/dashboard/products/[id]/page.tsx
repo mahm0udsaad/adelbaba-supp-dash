@@ -69,6 +69,11 @@ const SkuList = ({ skus }: { skus: ProductDetail["skus"] }) => {
               <Badge key={i} variant="secondary">{attr.name}: {attr.value}</Badge>
             ))}
           </div>
+          <div className="mt-3">
+            <Link href={`/dashboard/inventory?sku_id=${sku.id}`}>
+              <Button size="sm" variant="outline" className="bg-transparent">{t.operate || "Operate"}</Button>
+            </Link>
+          </div>
         </div>
       ))}
     </div>
@@ -141,6 +146,9 @@ export default function ProductDetailPage() {
           <div className="flex items-center gap-2">
             <Link href={`/dashboard/products/${product.id}/edit`}>
               <Button><Edit className="h-4 w-4 mr-2" />{t.edit}</Button>
+            </Link>
+            <Link href={`/dashboard/inventory?sku_id=${product.skus?.[0]?.id ?? ''}`}>
+              <Button variant="outline" className="bg-transparent"><Eye className="h-4 w-4 mr-2" />{t.viewInventory || "View inventory levels"}</Button>
             </Link>
             <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
               <Trash2 className="h-4 w-4 mr-2" />

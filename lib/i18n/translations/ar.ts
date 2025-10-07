@@ -4,6 +4,7 @@ export const ar: TranslationKeys = {
   // Navigation
   dashboard: "لوحة التحكم",
   rfqs: "طلبات الأسعار",
+  quotes: "عروضي",
   orders: "الطلبات",
   products: "المنتجات",
   membership: "العضوية",

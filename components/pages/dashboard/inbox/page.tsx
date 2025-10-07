@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,6 +27,8 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { useI18n } from "@/lib/i18n/context"
 import { useMockData } from "@/lib/mock-data-context"
+import { useApiWithFallback } from "@/hooks/useApiWithFallback"
+import { inboxApi } from "@/src/services/inbox-api"
 
 interface Message {
   id: string
@@ -269,15 +271,65 @@ export default function InboxPage() {
   const { messages: allMessages, setMessages: setAllMessages } = useMockData()
   const [messages, setMessages] = useState<Message[]>([])
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [chatLoading, setChatLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [replyText, setReplyText] = useState("")
   const [language] = useState<"en" | "ar">("en")
 
+  // Map API thread summary to UI message card model
+  const mapSummaryToUiMessage = useCallback((s: any): Message => {
+    const status = ["unread", "read", "replied", "urgent"].includes(String(s?.status))
+      ? (s.status as Message["status"]) : "read"
+    const priority = ["high", "medium", "low"].includes(String(s?.priority))
+      ? (s.priority as Message["priority"]) : "medium"
+    const category = ["inquiry", "order", "support", "general"].includes(String(s?.category))
+      ? (s.category as Message["category"]) : "general"
+    const created = s?.created_at || new Date().toISOString()
+    const last = s?.last_reply_at || created
+    return {
+      id: String(s?.id ?? "" + Math.random()),
+      subject: s?.subject || t?.inquiry || "Conversation",
+      from: {
+        name: s?.from_name || "Buyer",
+        company: s?.from_company || "",
+        email: s?.from_email || "",
+        avatar: s?.avatar_url || "/placeholder.svg",
+      },
+      to: {
+        name: "Supplier Team",
+        email: "supplier@adelbaba.com",
+      },
+      status,
+      priority,
+      category,
+      createdAt: created,
+      lastReply: last,
+      messages: [],
+      tags: Array.isArray(s?.tags) ? (s.tags as string[]) : [],
+    }
+  }, [t])
+
+  const fetchThreads = useCallback(async (): Promise<Message[]> => {
+    const rows = await inboxApi.list({ per_page: 50 })
+    return (rows || []).map(mapSummaryToUiMessage)
+  }, [mapSummaryToUiMessage])
+
+  // If API fails or returns empty, show empty state rather than mocks to avoid invalid IDs hitting API
+  const fallbackThreads = useCallback(async (): Promise<Message[]> => {
+    return []
+  }, [])
+
+  const { data: apiThreads, loading, setData: setApiThreads } = useApiWithFallback<Message[]>({
+    fetcher: fetchThreads,
+    fallback: fallbackThreads,
+    deps: [],
+  })
+
   const filtered = useMemo(() => {
-    let filteredMessages = [...(allMessages as Message[])]
+    const base = (apiThreads as Message[] | undefined) ?? (allMessages as Message[])
+    let filteredMessages = [...base]
     if (searchTerm) {
       filteredMessages = filteredMessages.filter(
         (message) =>
@@ -294,19 +346,55 @@ export default function InboxPage() {
       filteredMessages = filteredMessages.filter((message) => message.category === categoryFilter)
     }
     return filteredMessages
-  }, [allMessages, searchTerm, statusFilter, categoryFilter])
+  }, [apiThreads, allMessages, searchTerm, statusFilter, categoryFilter])
 
   // keep local state for selection/grid mapping
-  if (messages !== filtered) {
+  useEffect(() => {
     setMessages(filtered)
-  }
+  }, [filtered])
+
+  // When a thread is opened, fetch its messages and mark as read
+  useEffect(() => {
+    if (!selectedMessage) return
+    const idStr = String(selectedMessage.id)
+    const isApiThread = /^\d+$/.test(idStr)
+    if (!isApiThread) {
+      // Skip API calls for mock/local threads
+      return
+    }
+    let cancelled = false
+    setChatLoading(true)
+    ;(async () => {
+      try {
+        const apiMsgs = await inboxApi.getMessages(selectedMessage.id)
+        if (cancelled) return
+        const mapped = (apiMsgs || []).map((m: any) => ({
+          id: String(m.id),
+          content: String(m.content || ""),
+          sender: (m.sender === "supplier" ? "supplier" : "buyer") as const,
+          timestamp: String(m.timestamp || new Date().toISOString()),
+          attachments: Array.isArray(m.attachments) ? m.attachments : [],
+        }))
+        setSelectedMessage((prev) =>
+          prev && prev.id === selectedMessage.id
+            ? { ...prev, messages: mapped, status: "read", lastReply: mapped[mapped.length - 1]?.timestamp || prev.lastReply }
+            : prev,
+        )
+        // Update list view status to read
+        setMessages((prev) => prev.map((m) => (m.id === selectedMessage.id ? { ...m, status: "read" } : m)))
+        // Best-effort mark read
+        try { await inboxApi.markRead(selectedMessage.id) } catch {}
+      } finally {
+        if (!cancelled) setChatLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [selectedMessage?.id])
 
   const handleSendReply = async () => {
     if (!selectedMessage || !replyText.trim()) return
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
       const newReply = {
         id: `reply-${Date.now()}`,
         content: replyText,
@@ -322,8 +410,16 @@ export default function InboxPage() {
         messages: [...selectedMessage.messages, newReply],
       }
 
+      // Optimistically update local stores
       setAllMessages((prev) => (prev as Message[]).map((msg) => (msg.id === selectedMessage.id ? updatedMessage : msg)))
+      setMessages((prev) => prev.map((msg) => (msg.id === selectedMessage.id ? { ...msg, status: "replied" } : msg)))
       setSelectedMessage(updatedMessage)
+
+      // Send to API only for real threads (numeric IDs). For mock threads, keep optimistic update only.
+      const idStr = String(selectedMessage.id)
+      if (/^\d+$/.test(idStr)) {
+        await inboxApi.sendMessage(selectedMessage.id, { type: "text", content: replyText })
+      }
 
       toast({
         title: t.replySent,
@@ -666,9 +762,11 @@ export default function InboxPage() {
                     <h4 className="font-medium text-sm line-clamp-2 leading-tight mb-2">
                       {message.subject}
                     </h4>
-                    <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                      {message.messages[0]?.content.substring(0, 120)}...
-                    </p>
+                    {message.messages && message.messages[0]?.content ? (
+                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                        {message.messages[0]?.content.substring(0, 120)}...
+                      </p>
+                    ) : null}
                   </div>
 
                   {/* Footer */}

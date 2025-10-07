@@ -22,7 +22,7 @@ import {
   Users,
 } from "lucide-react"
 
-import type { CRMContactDetail } from "@/src/services/crm-api"
+import type { CRMContactDetail, CRMNote } from "@/src/services/crm-api"
 import { crmApi } from "@/src/services/crm-api"
 
 // Remove local mock; details now fetched via API
@@ -34,15 +34,21 @@ export default function ContactDetailPage() {
 
   const [contact, setContact] = useState<CRMContactDetail | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedNotes, setEditedNotes] = useState("")
+  const [isEditingTags, setIsEditingTags] = useState(false)
+  const [editedTags, setEditedTags] = useState("")
+  const [newNote, setNewNote] = useState("")
+  const [addingNote, setAddingNote] = useState(false)
+  const [addingInteraction, setAddingInteraction] = useState(false)
+  const [interactionType, setInteractionType] = useState("call")
+  const [interactionTitle, setInteractionTitle] = useState("")
+  const [interactionDetails, setInteractionDetails] = useState("")
 
   useEffect(() => {
     const fetchContact = async () => {
       try {
         const data = await crmApi.getContact(contactId)
         setContact(data)
-        setEditedNotes(Array.isArray(data.notes) ? data.notes.join("\n") : (data as any).notes || "")
+        setEditedTags((data.tags || []).join(", "))
       } catch (error) {
         setContact(null)
       } finally {
@@ -53,16 +59,65 @@ export default function ContactDetailPage() {
     fetchContact()
   }, [contactId])
 
-  const handleSaveNotes = async () => {
-    if (!contact) return
-
+  const handleAddNote = async () => {
+    if (!contact || !newNote.trim()) return
+    setAddingNote(true)
     try {
-      // TODO: Wire to API when endpoint for updating notes is available
-      setContact({ ...contact, notes: [editedNotes] } as CRMContactDetail)
-      setIsEditing(false)
-    } catch (error) {
-      setContact({ ...contact, notes: [editedNotes] } as CRMContactDetail)
-      setIsEditing(false)
+      const created: CRMNote = await crmApi.addNote(contact.id, newNote.trim())
+      setContact({ ...contact, notes: [created, ...(contact.notes || [])] })
+      setNewNote("")
+    } finally {
+      setAddingNote(false)
+    }
+  }
+
+  const handleEditNote = async (note: CRMNote) => {
+    if (!contact) return
+    const value = window.prompt("Edit note", note.note)
+    if (value == null) return
+    const updated = await crmApi.editNote(contact.id, note.id, value)
+    setContact({
+      ...contact,
+      notes: (contact.notes || []).map((n) => (n.id === note.id ? updated : n)),
+    })
+  }
+
+  const handleDeleteNote = async (note: CRMNote) => {
+    if (!contact) return
+    const confirmed = window.confirm("Delete this note?")
+    if (!confirmed) return
+    await crmApi.deleteNote(contact.id, note.id)
+    setContact({
+      ...contact,
+      notes: (contact.notes || []).filter((n) => n.id !== note.id),
+    })
+  }
+
+  const handleSaveTags = async () => {
+    if (!contact) return
+    const tags = editedTags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
+    const updated = await crmApi.updateTags(contact.id, tags)
+    setContact({ ...contact, tags: updated.tags || tags })
+    setIsEditingTags(false)
+  }
+
+  const handleAddInteraction = async () => {
+    if (!contact || !interactionTitle.trim()) return
+    setAddingInteraction(true)
+    try {
+      const created = await crmApi.addInteraction(contact.id, {
+        interaction_type: interactionType as any,
+        title: interactionTitle.trim(),
+        details: interactionDetails.trim() || undefined,
+      })
+      setContact({ ...contact, interactions: [created, ...(contact.interactions || [])] })
+      setInteractionTitle("")
+      setInteractionDetails("")
+    } finally {
+      setAddingInteraction(false)
     }
   }
 
@@ -221,16 +276,44 @@ export default function ContactDetailPage() {
           {/* Tags */}
           <Card>
             <CardHeader>
-              <CardTitle>Tags</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Tags</CardTitle>
+                {!isEditingTags ? (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditingTags(true)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                ) : (
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsEditingTags(false)}>
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleSaveTags}>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {contact.tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
+              {!isEditingTags ? (
+                <div className="flex flex-wrap gap-2">
+                  {contact.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <Textarea
+                  value={editedTags}
+                  onChange={(e) => setEditedTags(e.target.value)}
+                  placeholder="Comma separated tags"
+                  className="min-h-[80px]"
+                />
+              )}
             </CardContent>
           </Card>
         </div>
@@ -240,45 +323,49 @@ export default function ContactDetailPage() {
           {/* Notes */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Notes</CardTitle>
-                {!isEditing ? (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                ) : (
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setIsEditing(false)
-                        setEditedNotes(contact.notes)
-                      }}
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
-                    <Button size="sm" onClick={handleSaveNotes}>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <CardTitle>Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              {isEditing ? (
-                <Textarea
-                  value={editedNotes}
-                  onChange={(e) => setEditedNotes(e.target.value)}
-                  placeholder="Add notes about this contact..."
-                  className="min-h-[100px]"
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">{(Array.isArray(contact.notes) ? contact.notes.join("\n") : (contact as any).notes) || "No notes available"}</p>
-              )}
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Textarea
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Write a new note..."
+                    className="min-h-[80px]"
+                  />
+                  <Button size="sm" onClick={handleAddNote} disabled={addingNote}>
+                    {addingNote ? "Saving..." : "Add Note"}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {(contact.notes || []).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No notes yet</p>
+                  ) : (
+                    (contact.notes || []).map((n) => (
+                      <div key={n.id} className="border rounded p-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-sm whitespace-pre-wrap">{n.note}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{new Date(n.updated_at || n.created_at).toLocaleString()}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditNote(n)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleDeleteNote(n)}>
+                              <X className="h-4 w-4 mr-2" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -290,12 +377,46 @@ export default function ContactDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {/* Add interaction */}
+                <div className="border rounded-lg p-4">
+                  <div className="grid gap-2 md:grid-cols-3">
+                    <select
+                      className="border rounded px-2 py-1"
+                      value={interactionType}
+                      onChange={(e) => setInteractionType(e.target.value)}
+                    >
+                      <option value="call">Call</option>
+                      <option value="email">Email</option>
+                      <option value="meeting">Meeting</option>
+                      <option value="order">Order</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <input
+                      className="border rounded px-2 py-1"
+                      placeholder="Title"
+                      value={interactionTitle}
+                      onChange={(e) => setInteractionTitle(e.target.value)}
+                    />
+                    <input
+                      className="border rounded px-2 py-1 md:col-span-1"
+                      placeholder="Details (optional)"
+                      value={interactionDetails}
+                      onChange={(e) => setInteractionDetails(e.target.value)}
+                    />
+                  </div>
+                  <div className="mt-2">
+                    <Button size="sm" onClick={handleAddInteraction} disabled={addingInteraction}>
+                      {addingInteraction ? "Adding..." : "Add Interaction"}
+                    </Button>
+                  </div>
+                </div>
+
                 {(contact.interactions || []).map((interaction) => (
                   <div key={interaction.id} className="border rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center space-x-2">
                         {getInteractionIcon(interaction.interaction_type)}
-                        <h4 className="font-medium">{interaction.title}</h4>
+                        <h4 className="font-medium">{interaction.description || interaction.interaction_type}</h4>
                       </div>
                       <Badge variant="outline" className="text-xs">
                         {interaction.interaction_type}
