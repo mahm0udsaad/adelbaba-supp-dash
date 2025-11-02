@@ -54,24 +54,58 @@ export async function POST(req: Request) {
 
     const token = (session as any)?.token || (session as any)?.appToken
     const companyId = (session as any)?.company?.id
+    console.log("companyId", companyId)
+
+    if (!token) {
+      return NextResponse.json({ errors: [{ message: "Not authenticated" }] }, { status: 401 })
+    }
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-Requested-With": "AdelbabaDashboard",
     }
     if (token) headers.Authorization = `Bearer ${token}`
     if (companyId) headers["X-Company-ID"] = String(companyId)
-
+    console.log("headers", headers) 
     const upstream = await fetch(GRAPHQL_URL, {
       method: "POST",
       headers,
       body: JSON.stringify({ query, variables: { startDate, endDate, limit } }),
       cache: "no-store",
     })
-
+    console.log("upstream", upstream)
     const text = await upstream.text()
     // Try parse JSON, otherwise pass text
     try {
       const json = JSON.parse(text)
+      console.log("json", json)
+      if (upstream.status >= 500 && process.env.NODE_ENV !== "production") {
+        const empty = {
+          data: {
+            topProducts: [],
+            orderAnalyticsSummary: {
+              averageOrderValue: 0,
+              ordersByDate: [],
+              paymentStatus: { cancelled: 0, completed: 0, expired: 0, failed: 0, pending: 0, processing: 0, refunded: 0 },
+              revenueTrend: [],
+              totalOrders: 0,
+              totalRevenue: 0,
+            },
+            productAnalyticsSummary: {
+              totalAddedToCart: 0,
+              totalClick: 0,
+              totalFavorites: 0,
+              totalOrderPaid: 0,
+              totalOrdersCreated: 0,
+              totalRevenue: 0,
+              totalViews: 0,
+            },
+          },
+          errors: json?.errors || [{ message: "Upstream 5xx - returning empty analytics data in development" }],
+        }
+        return NextResponse.json(empty, { status: 200, headers: { "Cache-Control": "no-store" } })
+      }
       return NextResponse.json(json, {
         status: upstream.status,
         headers: { "Cache-Control": "no-store" },

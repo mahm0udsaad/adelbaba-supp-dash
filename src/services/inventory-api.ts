@@ -83,4 +83,43 @@ export async function operateInventory(body: {
   return res.data
 }
 
+export type LowStockItem = {
+  id: number
+  sku: {
+    id: number
+    code: string
+    product: {
+      id: number
+      name: string
+      image: string
+    }
+  }
+  warehouse: {
+    id: number
+    name: string
+    code: string
+  }
+  on_hand: number
+  reserved: number
+  available: number
+  reorder_point: number
+  restock_level: number
+}
 
+export async function listLowStock(params?: {
+  warehouses?: string // comma-separated ids
+  per_page?: number
+}): Promise<{ data: LowStockItem[] }> {
+  const res = await apiClient.get("/v1/company/inventory/low-stock", { params })
+  return res.data
+}
+
+export async function listInventory(params?: {
+  sku?: string
+  warehouse_id?: number
+  page?: number
+  per_page?: number
+}): Promise<any> {
+  const res = await apiClient.get("/v1/company/inventory", { params })
+  return res.data
+}

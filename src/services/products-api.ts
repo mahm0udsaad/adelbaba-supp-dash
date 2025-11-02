@@ -67,3 +67,21 @@ export const updateProduct = async (id: number | string, productData: FormData):
 export const deleteProduct = async (id: number | string): Promise<void> => {
   await apiClient.delete(`${BASE_URL}/${id}`);
 };
+
+/**
+ * 6) List All Products (non-paginated)
+ * Useful for dropdowns/selections
+ */
+export const listAllProducts = async (): Promise<{ data: ProductListItem[] }> => {
+  const response = await apiClient.get(`${BASE_URL}/all`);
+  return response.data;
+};
+
+/**
+ * 7) List Product SKUs
+ * Get all SKUs for a specific product
+ */
+export const listProductSkus = async (id: number | string): Promise<{ data: any[] }> => {
+  const response = await apiClient.get(`${BASE_URL}/all/${id}`);
+  return response.data;
+};

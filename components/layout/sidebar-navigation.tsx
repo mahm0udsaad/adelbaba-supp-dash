@@ -18,6 +18,8 @@ import {
   MessageSquare,
   Settings,
   DollarSign,
+  Wallet,
+  Truck,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -29,6 +31,8 @@ const sidebarItems = [
   { icon: Boxes, key: "inventory" as const, href: "/dashboard/inventory" },
   { icon: Crown, key: "membership" as const, href: "/dashboard/membership" },
   { icon: BarChart3, key: "analytics" as const, href: "/dashboard/analytics" },
+  { icon: Wallet, key: "wallet" as const, href: "/dashboard/wallet" },
+  { icon: Truck, key: "shipments" as const, href: "/dashboard/shipments" },
   { icon: Users, key: "crm" as const, href: "/dashboard/crm" },
   { icon: Megaphone, key: "ads" as const, href: "/dashboard/ads" },
   { icon: Award, key: "certificates" as const, href: "/dashboard/certificates" },

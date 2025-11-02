@@ -4,10 +4,13 @@ export interface TranslationKeys {
   // Navigation
   dashboard: string
   rfqs: string
+  quotes: string
   orders: string
   products: string
   membership: string
   analytics: string
+  wallet?: string
+  shipments?: string
   crm: string
   ads: string
   certificates: string
@@ -41,12 +44,17 @@ export interface TranslationKeys {
   activeOrders: string
   tradeAssurance: string
   totalValue: string
+  totalIncome?: string
+  totalExpenses?: string
+  availableBalance?: string
+  netProfit?: string
   searchOrders: string
   allStatus: string
   awaitingPayment: string
   inEscrow: string
   shipped: string
   delivered: string
+  returned?: string
   disputed: string
   cancelled: string
   orderDate: string

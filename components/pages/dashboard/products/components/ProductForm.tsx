@@ -346,7 +346,12 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
     }
 
     if (priceType === "sku" && enhancedSkus.length === 0) {
-      newErrors.pricing = "At least one SKU is required for SKU pricing"
+      newErrors.pricing = "At least one SKU variant is required for SKU pricing"
+    }
+
+    // Warn if no warehouses are available (non-blocking for range/tiered, but important)
+    if (warehouses.length === 0) {
+      newErrors.warehouses = "Warning: No warehouses configured. Inventory tracking will be limited."
     }
 
     // Validate SKUs if they exist
@@ -531,50 +536,88 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
         })
       }
 
-      // SKUs: Only append when price_type is 'sku' and we have valid SKUs
+      // SKUs: ALWAYS required according to API spec, regardless of price_type
+      // Helper function to append a single SKU to FormData
+      const appendSkuToFormData = (sku: any, skuIndex: number) => {
+        // Required fields
+        if (sku.code) fd.append(`skus[${skuIndex}][code]`, String(sku.code))
+        if (typeof sku.price !== 'undefined') fd.append(`skus[${skuIndex}][price]`, String(sku.price))
+        // Package details
+        if (sku.package_details) {
+          if (sku.package_details.mass_unit) fd.append(`skus[${skuIndex}][package_details][mass_unit]`, String(sku.package_details.mass_unit))
+          if (typeof sku.package_details.weight !== 'undefined') fd.append(`skus[${skuIndex}][package_details][weight]`, String(sku.package_details.weight))
+          if (sku.package_details.distance_unit) fd.append(`skus[${skuIndex}][package_details][distance_unit]`, String(sku.package_details.distance_unit))
+          if (typeof sku.package_details.height !== 'undefined') fd.append(`skus[${skuIndex}][package_details][height]`, String(sku.package_details.height))
+          if (typeof sku.package_details.length !== 'undefined') fd.append(`skus[${skuIndex}][package_details][length]`, String(sku.package_details.length))
+          if (typeof sku.package_details.width !== 'undefined') fd.append(`skus[${skuIndex}][package_details][width]`, String(sku.package_details.width))
+        }
+        
+        // Inventory by warehouses
+        if (sku.inventory?.warehouses) {
+          sku.inventory.warehouses.forEach((w: any, wIndex: number) => {
+            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][warehouse_id]`, String(w.warehouse_id))
+            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][on_hand]`, String(w.on_hand))
+            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reserved]`, String(w.reserved))
+            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reorder_point]`, String(w.reorder_point))
+            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][restock_level]`, String(w.restock_level))
+            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][track_inventory]`, w.track_inventory ? '1' : '0')
+          })
+        }
+        
+        // Attributes
+        if (sku.attributes && sku.attributes.length > 0) {
+          sku.attributes.forEach((attr: any, attrIndex: number) => {
+            fd.append(`skus[${skuIndex}][attributes][${attrIndex}][type]`, String(attr.type))
+            if (attr.variation_value_id) {
+              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][variation_value_id]`, String(attr.variation_value_id))
+            }
+            if (attr.hex_color) {
+              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][hex_color]`, String(attr.hex_color))
+            }
+            if (attr.image && attr.image instanceof File) {
+              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][image]`, attr.image)
+            }
+          })
+        }
+      }
+
       if (priceType === 'sku' && enhancedSkus && enhancedSkus.length > 0) {
+        // Use user-defined SKUs for SKU pricing
         enhancedSkus.forEach((sku: any, skuIndex: number) => {
-          // Required fields
-          if (sku.code) fd.append(`skus[${skuIndex}][code]`, String(sku.code))
-          if (typeof sku.price !== 'undefined') fd.append(`skus[${skuIndex}][price]`, String(sku.price))
-          // Package details
-          if (sku.package_details) {
-            if (sku.package_details.mass_unit) fd.append(`skus[${skuIndex}][package_details][mass_unit]`, String(sku.package_details.mass_unit))
-            if (typeof sku.package_details.weight !== 'undefined') fd.append(`skus[${skuIndex}][package_details][weight]`, String(sku.package_details.weight))
-            if (sku.package_details.distance_unit) fd.append(`skus[${skuIndex}][package_details][distance_unit]`, String(sku.package_details.distance_unit))
-            if (typeof sku.package_details.height !== 'undefined') fd.append(`skus[${skuIndex}][package_details][height]`, String(sku.package_details.height))
-            if (typeof sku.package_details.length !== 'undefined') fd.append(`skus[${skuIndex}][package_details][length]`, String(sku.package_details.length))
-            if (typeof sku.package_details.width !== 'undefined') fd.append(`skus[${skuIndex}][package_details][width]`, String(sku.package_details.width))
-          }
-          
-          // Inventory by warehouses
-          if (sku.inventory?.warehouses) {
-            sku.inventory.warehouses.forEach((w: any, wIndex: number) => {
-              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][warehouse_id]`, String(w.warehouse_id))
-              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][on_hand]`, String(w.on_hand))
-              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reserved]`, String(w.reserved))
-              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reorder_point]`, String(w.reorder_point))
-              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][restock_level]`, String(w.restock_level))
-              fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][track_inventory]`, w.track_inventory ? '1' : '0')
-            })
-          }
-          
-          // Attributes
-          if (sku.attributes) {
-            sku.attributes.forEach((attr: any, attrIndex: number) => {
-              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][type]`, String(attr.type))
-              if (attr.variation_value_id) {
-                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][variation_value_id]`, String(attr.variation_value_id))
-              }
-              if (attr.hex_color) {
-                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][hex_color]`, String(attr.hex_color))
-              }
-              if (attr.image && attr.image instanceof File) {
-                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][image]`, attr.image)
-              }
-            })
-          }
+          appendSkuToFormData(sku, skuIndex)
         })
+      } else {
+        // For 'range' and 'tiered' pricing, create a default SKU
+        // The API requires at least one SKU for inventory tracking
+        const defaultPrice = priceType === 'range' 
+          ? parseFloat(rangePrice.min_price || '0') 
+          : (tieredPrices.length > 0 ? tieredPrices[0].price : 0)
+
+        const defaultSku = {
+          code: `SKU-${name.substring(0, 10).replace(/\s+/g, '-').toUpperCase()}-DEFAULT`,
+          price: defaultPrice,
+          package_details: {
+            mass_unit: 'lb',
+            weight: 1,
+            distance_unit: 'in',
+            height: 1,
+            length: 1,
+            width: 1
+          },
+          inventory: {
+            warehouses: warehouses.length > 0 ? [{
+              warehouse_id: warehouses[0].id,
+              on_hand: 0,
+              reserved: 0,
+              reorder_point: 5,
+              restock_level: 20,
+              track_inventory: true
+            }] : []
+          },
+          attributes: [] // Empty for default SKU
+        }
+        
+        appendSkuToFormData(defaultSku, 0)
       }
 
       // Add media files (Laravel array notation)
@@ -827,6 +870,18 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
               <CardTitle className="text-lg">Save & Publish</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Warehouse Warning */}
+              {errors.warehouses && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                    <div className="text-sm text-yellow-800">
+                      {errors.warehouses}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="is_active" 
