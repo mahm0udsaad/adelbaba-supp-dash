@@ -15,6 +15,9 @@ import {
   MessageSquare,
   Clock,
   CheckCircle,
+  Plus,
+  PlusIcon,
+  PlusSquare,
 } from "lucide-react"
 import Link from "next/link"
 import { useMockData } from "@/lib/mock-data-context"
@@ -138,7 +141,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t.newRFQs}</CardTitle>
@@ -192,6 +195,36 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t.quickActions}</CardTitle>
+          <CardDescription>{t.mostUsedActions}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 grid-cols-3 sm:grid-cols-3">
+            <Link href="/dashboard/products/new">
+              <Button className="h-20 flex-col gap-2 w-full">
+                <PlusSquare className="h-6 w-6" />
+                {t.addNewProduct}
+              </Button>
+            </Link>
+            <Link href="/dashboard/inbox">
+              <Button variant="outline" className="h-20 flex-col gap-2 bg-transparent w-full">
+                <MessageSquare className="h-6 w-6" />
+                {t.checkMessages}
+              </Button>
+            </Link>
+            <Link href="/dashboard/analytics">
+              <Button variant="outline" className="h-20 flex-col gap-2 bg-transparent w-full">
+                <TrendingUp className="h-6 w-6" />
+                {t.viewAnalytics}
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
       <div className="grid gap-6 md:grid-cols-2">
         {/* Recent RFQs */}
         <Card>
@@ -294,35 +327,6 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t.quickActions}</CardTitle>
-          <CardDescription>{t.mostUsedActions}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Link href="/dashboard/products/new">
-              <Button className="h-20 flex-col gap-2 w-full">
-                <Package className="h-6 w-6" />
-                {t.addNewProduct}
-              </Button>
-            </Link>
-            <Link href="/dashboard/inbox">
-              <Button variant="outline" className="h-20 flex-col gap-2 bg-transparent w-full">
-                <MessageSquare className="h-6 w-6" />
-                {t.checkMessages}
-              </Button>
-            </Link>
-            <Link href="/dashboard/analytics">
-              <Button variant="outline" className="h-20 flex-col gap-2 bg-transparent w-full">
-                <TrendingUp className="h-6 w-6" />
-                {t.viewAnalytics}
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

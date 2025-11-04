@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, Search, Filter, Eye, DollarSign, MapPin, Building, Calendar, TrendingUp, RefreshCw, AlertCircle } from "lucide-react"
+import { FileText, Search, Filter, Eye, DollarSign, TrendingUp, RefreshCw } from "lucide-react"
 import { RFQCard } from "./RFQCard"
 import Link from "next/link"
 import { useApiWithFallback } from "@/hooks/useApiWithFallback"
@@ -14,6 +14,7 @@ import { listQuotes, withdrawQuote } from "@/src/services/quotes-api"
 import { listMarketRFQs, getDashboardMetrics, type RFQListItem, type RFQFilters } from "@/src/services/rfq-api"
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { toast } from "@/hooks/use-toast"
+import { useI18n } from "@/lib/i18n/context"
 
 // Dashboard metrics interface
 interface DashboardMetrics {
@@ -34,8 +35,8 @@ const normalizeRFQ = (rfq: RFQListItem): RFQListItem & {
 } => {
   return {
     ...rfq,
-    buyerCompany: rfq.buyer_company || 'Unknown Company',
-    category: rfq.category || 'Uncategorized', 
+    buyerCompany: rfq.buyer_company || "",
+    category: rfq.category || "",
     targetQty: rfq.target_qty || 0,
     targetPrice: rfq.target_price || 0,
     quotesCount: rfq.quotes_count || 0,
@@ -67,7 +68,6 @@ export default function RFQPage() {
     per_page: 10,
     match: true,
   })
-  const [language] = useState<"en" | "ar">("en")
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics>({
     openRFQs: 0,
     quotesSubmitted: 0,
@@ -75,8 +75,7 @@ export default function RFQPage() {
     winRate: 0
   })
   const [metricsLoading, setMetricsLoading] = useState(false)
-
-  const isArabic = language === "ar"
+  const { t, formatMessage } = useI18n()
 
   // Fetch dashboard metrics
   const fetchDashboardMetrics = useCallback(async () => {
@@ -87,14 +86,14 @@ export default function RFQPage() {
     } catch (error) {
       console.error('Failed to fetch dashboard metrics:', error)
       toast({
-        title: isArabic ? "خطأ" : "Error",
-        description: isArabic ? "فشل في تحميل إحصائيات لوحة التحكم" : "Failed to load dashboard metrics",
+        title: t.error,
+        description: t.rfqMetricsError,
         variant: "destructive",
       })
     } finally {
       setMetricsLoading(false)
     }
-  }, [isArabic])
+  }, [t])
 
   // Load metrics on component mount
   useEffect(() => {
@@ -168,10 +167,10 @@ export default function RFQPage() {
     const diff = expiry.getTime() - now.getTime()
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
 
-    if (days < 0) return isArabic ? "منتهي الصلاحية" : "Expired"
-    if (days === 0) return isArabic ? "ينتهي اليوم" : "Expires today"
-    if (days === 1) return isArabic ? "ينتهي غداً" : "Expires tomorrow"
-    return isArabic ? `${days} أيام متبقية` : `${days} days left`
+    if (days < 0) return t.expired
+    if (days === 0) return t.expiresToday
+    if (days === 1) return t.expiresTomorrow
+    return formatMessage("expiresInDays", { days })
   }
 
   // Refresh quotes when a new quote is submitted
@@ -184,16 +183,14 @@ export default function RFQPage() {
     <div className="p-4 space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground">{isArabic ? "طلبات الأسعار" : "RFQs"}</h1>
-        <p className="text-muted-foreground">
-          {isArabic ? "تصفح وقدم عروض أسعار للطلبات المتاحة" : "Browse and submit quotes for available requests"}
-        </p>
+        <h1 className="text-3xl font-bold text-foreground">{t.rfqs}</h1>
+        <p className="text-muted-foreground">{t.rfqSubtitle}</p>
       </div>
 
       {/* My Quotes (from API) */}
       <Card>
         <CardHeader className="flex items-center justify-between">
-          <CardTitle>{isArabic ? "عروضي" : "My Quotes"}</CardTitle>
+          <CardTitle>{t.quotes}</CardTitle>
         </CardHeader>
         <CardContent>
           {quotesLoading ? (
@@ -204,7 +201,7 @@ export default function RFQPage() {
             <div className="flex flex-col items-center justify-center py-6">
               <FileText className="h-10 w-10 text-muted-foreground mb-2" />
               <div className="text-sm text-muted-foreground">
-                {isArabic ? "لا توجد عروض حتى الآن" : "No quotes yet"}
+                {t.quotesEmptyTitle}
               </div>
             </div>
           ) : (
@@ -229,7 +226,7 @@ export default function RFQPage() {
                       <Link href={`/dashboard/rfq/${q.rfq?.id ?? ""}`}>
                         <Button size="sm" variant="outline" className="bg-transparent">
                           <Eye className="h-4 w-4 mr-2" />
-                          {isArabic ? "عرض الطلب" : "View RFQ"}
+                          {t.quoteViewRfq}
                         </Button>
                       </Link>
                       {q.status?.toLowerCase() !== "withdrawn" && q.status?.toLowerCase() !== "awarded" && (
@@ -240,8 +237,8 @@ export default function RFQPage() {
                             try {
                               await withdrawQuote(q.id)
                               toast({ 
-                                title: isArabic ? "تم السحب" : "Withdrawn", 
-                                description: isArabic ? "تم سحب العرض بنجاح" : "Quote withdrawn successfully" 
+                                title: t.quoteWithdrawSuccessTitle,
+                                description: t.quoteWithdrawSuccessDescription,
                               })
                               // Optimistic update and refresh metrics
                               setQuotesResponse((prev: any) => {
@@ -254,15 +251,15 @@ export default function RFQPage() {
                             } catch (err: any) {
                               console.error('Error withdrawing quote:', err)
                               toast({ 
-                                title: isArabic ? "خطأ" : "Error", 
-                                description: err?.response?.data?.message || err?.message || (isArabic ? "فشل سحب العرض" : "Failed to withdraw quote"), 
+                                title: t.error,
+                                description: err?.response?.data?.message || err?.message || t.quoteWithdrawError,
                                 variant: "destructive" 
                               })
                             }
                           }}
                           disabled={metricsLoading}
                         >
-                          {isArabic ? "سحب" : "Withdraw"}
+                          {t.quoteWithdraw}
                         </Button>
                       )}
                     </div>
@@ -286,9 +283,7 @@ export default function RFQPage() {
                     <PaginationItem>
                       <div className="px-3 py-2 text-sm text-muted-foreground">
                         {(quotesResponse.meta.from ?? 0) === null && (quotesResponse.meta.to ?? 0) === null
-                          ? isArabic
-                            ? "لا نتائج"
-                            : "No results"
+                          ? t.noResults
                           : `${quotesResponse.meta.from ?? 0}-${quotesResponse.meta.to ?? 0} / ${quotesResponse.meta.total ?? 0}`}
                       </div>
                     </PaginationItem>
@@ -315,7 +310,7 @@ export default function RFQPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{isArabic ? "طلبات مفتوحة" : "Open RFQs"}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.rfqStatsOpen}</CardTitle>
             <FileText className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -342,7 +337,7 @@ export default function RFQPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{isArabic ? "عروض مقدمة" : "Quotes Submitted"}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.rfqStatsSubmitted}</CardTitle>
             <TrendingUp className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
@@ -358,7 +353,7 @@ export default function RFQPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{isArabic ? "طلبات فائزة" : "Awarded"}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.rfqStatsAwarded}</CardTitle>
             <DollarSign className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
@@ -374,7 +369,7 @@ export default function RFQPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{isArabic ? "معدل الفوز" : "Win Rate"}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.rfqStatsWinRate}</CardTitle>
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -394,7 +389,7 @@ export default function RFQPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            {isArabic ? "البحث والتصفية" : "Search & Filter"}
+            {t.searchAndFilter}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -402,7 +397,7 @@ export default function RFQPage() {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={isArabic ? "البحث في الطلبات..." : "Search RFQs..."}
+                placeholder={t.rfqSearchPlaceholder}
                 value={filters.q || ""}
                 onChange={(e) => handleFilterChange({ q: e.target.value })}
                 className="pl-10"
@@ -411,28 +406,28 @@ export default function RFQPage() {
 
             <Select value={filters.status || "all"} onValueChange={(value) => handleFilterChange({ status: value === "all" ? "" : value })}>
               <SelectTrigger>
-                <SelectValue placeholder={isArabic ? "الحالة" : "Status"} />
+                <SelectValue placeholder={t.status} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{isArabic ? "جميع الحالات" : "All Status"}</SelectItem>
-                <SelectItem value="open">{isArabic ? "مفتوح" : "Open"}</SelectItem>
-                <SelectItem value="quoted">{isArabic ? "تم الرد" : "Quoted"}</SelectItem>
-                <SelectItem value="awarded">{isArabic ? "فائز" : "Awarded"}</SelectItem>
-                <SelectItem value="expired">{isArabic ? "منتهي" : "Expired"}</SelectItem>
+                <SelectItem value="all">{t.allStatus}</SelectItem>
+                <SelectItem value="open">{t.open}</SelectItem>
+                <SelectItem value="quoted">{t.quoted}</SelectItem>
+                <SelectItem value="awarded">{t.awarded}</SelectItem>
+                <SelectItem value="expired">{t.expired}</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={filters.category_id || "all"} onValueChange={(value) => handleFilterChange({ category_id: value === "all" ? "" : value })}>
               <SelectTrigger>
-                <SelectValue placeholder={isArabic ? "الفئة" : "Category"} />
+                <SelectValue placeholder={t.category} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{isArabic ? "جميع الفئات" : "All Categories"}</SelectItem>
-                <SelectItem value="1">{isArabic ? "إلكترونيات" : "Electronics"}</SelectItem>
-                <SelectItem value="2">{isArabic ? "منسوجات" : "Textiles"}</SelectItem>
-                <SelectItem value="3">{isArabic ? "منزل ومطبخ" : "Home & Kitchen"}</SelectItem>
-                <SelectItem value="4">{isArabic ? "مواد البناء" : "Construction"}</SelectItem>
-                <SelectItem value="5">{isArabic ? "تعبئة وتغليف" : "Packaging"}</SelectItem>
+                <SelectItem value="all">{t.allCategories}</SelectItem>
+                <SelectItem value="1">{t.electronics}</SelectItem>
+                <SelectItem value="2">{t.textiles}</SelectItem>
+                <SelectItem value="3">{t.homeKitchen}</SelectItem>
+                <SelectItem value="4">{t.construction || "Construction"}</SelectItem>
+                <SelectItem value="5">{t.packaging || "Packaging"}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -441,7 +436,7 @@ export default function RFQPage() {
               onClick={() => handleFilterChange({ match: !filters.match })}
               className="bg-transparent"
             >
-              {isArabic ? "طلبات مناسبة فقط" : "Matching Only"}
+              {t.rfqMatchingOnly}
             </Button>
           </div>
         </CardContent>
@@ -458,10 +453,10 @@ export default function RFQPage() {
             <CardContent className="flex flex-col items-center justify-center py-8">
               <FileText className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium text-muted-foreground">
-                {isArabic ? "لا توجد طلبات أسعار" : "No RFQs found"}
+                {t.rfqEmptyTitle}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {isArabic ? "جرب تغيير معايير البحث" : "Try adjusting your search criteria"}
+                {t.rfqEmptyDescription}
               </p>
               <Button 
                 onClick={() => refetchRFQs()} 
@@ -469,7 +464,7 @@ export default function RFQPage() {
                 className="mt-4"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                {isArabic ? "إعادة تحميل" : "Refresh"}
+                {t.refresh}
               </Button>
             </CardContent>
           </Card>
@@ -480,24 +475,22 @@ export default function RFQPage() {
               <RFQCard
                 key={rfq.id}
                 rfq={rfq as any}
-                isArabic={isArabic}
                 expiresAt={expiresAt}
                 quotesResponse={quotesResponse as any}
                 onWithdraw={async (quoteId: number) => {
                   try {
                     await withdrawQuote(quoteId)
                     toast({
-                      title: isArabic ? "تم السحب" : "Quote Withdrawn",
-                      description: isArabic ? "تم سحب العرض بنجاح" : "Quote withdrawn successfully",
+                      title: t.quoteWithdrawSuccessTitle,
+                      description: t.quoteWithdrawSuccessDescription,
                     })
                     refetchQuotes()
                     fetchDashboardMetrics()
                   } catch (err: any) {
                     console.error("Error withdrawing quote:", err)
                     toast({
-                      title: isArabic ? "خطأ" : "Error",
-                      description:
-                        err?.response?.data?.message || err?.message || (isArabic ? "فشل سحب العرض" : "Failed to withdraw quote"),
+                      title: t.error,
+                      description: err?.response?.data?.message || err?.message || t.quoteWithdrawError,
                       variant: "destructive",
                     })
                   }
@@ -526,9 +519,7 @@ export default function RFQPage() {
               <PaginationItem>
                 <div className="px-3 py-2 text-sm text-muted-foreground">
                   {rfqResponse.meta.from === null && rfqResponse.meta.to === null
-                    ? isArabic
-                      ? "لا نتائج"
-                      : "No results"
+                    ? t.noResults
                     : `${rfqResponse.meta.from || 0}-${rfqResponse.meta.to || 0} / ${rfqResponse.meta.total || 0}`}
                 </div>
               </PaginationItem>

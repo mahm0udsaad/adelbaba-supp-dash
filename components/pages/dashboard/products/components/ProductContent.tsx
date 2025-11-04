@@ -91,7 +91,14 @@ export function ProductContent({ content, setContent }: ProductContentProps) {
 
   const addGeneralField = () => {
     if (!content) return
-    const newKey = `field_${Date.now()}`
+    // Find the next available field number for a cleaner UX
+    const existingFieldNumbers = Object.keys(content.general)
+      .filter(key => key.startsWith('field_'))
+      .map(key => parseInt(key.replace('field_', '')) || 0)
+    const nextNumber = existingFieldNumbers.length > 0 
+      ? Math.max(...existingFieldNumbers) + 1 
+      : 1
+    const newKey = `field_${nextNumber}`
     setContent({
       ...content,
       general: { ...content.general, [newKey]: "" }
@@ -198,8 +205,16 @@ export function ProductContent({ content, setContent }: ProductContentProps) {
                 ) : (
                   <Input
                     placeholder={t.fieldName || "Field Name"}
-                    defaultValue={key}
-                    onBlur={(e) => updateGeneralFieldName(key, e.target.value)}
+                    defaultValue={key.startsWith('field_') ? '' : key}
+                    onBlur={(e) => {
+                      const newValue = e.target.value.trim()
+                      if (newValue) {
+                        updateGeneralFieldName(key, newValue)
+                      } else if (!key.startsWith('field_')) {
+                        // If user clears a custom field name, revert to original
+                        e.target.value = key
+                      }
+                    }}
                   />
                 )}
                 <Input

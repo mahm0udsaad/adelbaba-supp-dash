@@ -18,7 +18,7 @@ function DashboardLayoutContent({ children }: { children: ReactNode }) {
 
   return (
     <div className={`h-screen bg-background ${isArabic ? "rtl" : "ltr"} flex overflow-y-scroll`} dir={isArabic ? "rtl" : "ltr"}>
-      <MobileMenuButton onClick={() => setSidebarOpen(!sidebarOpen)} />
+      <MobileMenuButton isSidebarOpen={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)} />
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} toggleLanguage={toggleLanguage} />
       <main className="flex-1 overflow-y-auto bg-background">{children}</main>
       <SidebarOverlay isOpen={sidebarOpen} onClose={closeSidebar} />

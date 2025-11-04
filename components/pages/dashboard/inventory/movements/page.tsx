@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
 import { InventoryOperationType, listInventoryHistory, listWarehouses, operateInventory } from "@/src/services/inventory-api"
+import { useI18n } from "@/lib/i18n/context"
 
 export default function MovementsPage() {
   const [warehouses, setWarehouses] = useState<Array<{ id: number; name: string }>>([])
@@ -17,6 +18,7 @@ export default function MovementsPage() {
   const [warehouseId, setWarehouseId] = useState<string | undefined>(undefined)
   const [history, setHistory] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const { t } = useI18n()
 
   // Operate
   const [operateOpen, setOperateOpen] = useState(false)
@@ -49,21 +51,34 @@ export default function MovementsPage() {
     }
   }
 
+  const operationLabels: Record<InventoryOperationType, string> = {
+    receive: t.inventoryOperationReceive,
+    ship: t.inventoryOperationShip,
+    reserve: t.inventoryOperationReserve,
+    release_reservation: t.inventoryOperationRelease,
+    adjust: t.inventoryOperationAdjust,
+    count: t.inventoryOperationCount,
+    return: t.inventoryOperationReturn,
+    damage: t.inventoryOperationDamage,
+    loss: t.inventoryOperationLoss,
+    transfer: t.inventoryOperationTransfer,
+  }
+
   return (
     <div className="p-4 space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Inventory Movements</CardTitle>
+          <CardTitle>{t.inventoryMovementsTitle}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
-            <Input placeholder="SKU ID" value={skuId} onChange={(e) => setSkuId(e.target.value)} />
+            <Input placeholder={t.inventorySkuPlaceholder} value={skuId} onChange={(e) => setSkuId(e.target.value)} />
             <Select value={warehouseId ?? "all"} onValueChange={(v) => setWarehouseId(v === "all" ? undefined : v)}>
               <SelectTrigger>
-                <SelectValue placeholder="All Warehouses" />
+                <SelectValue placeholder={t.inventoryAllWarehousesOption} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Warehouses</SelectItem>
+                <SelectItem value="all">{t.inventoryAllWarehousesOption}</SelectItem>
                 {warehouses.map((w) => (
                   <SelectItem key={w.id} value={String(w.id)}>{w.name}</SelectItem>
                 ))}
@@ -75,26 +90,30 @@ export default function MovementsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Qty</TableHead>
-                  <TableHead>Reserved Δ</TableHead>
-                  <TableHead>On Hand Δ</TableHead>
-                  <TableHead>At</TableHead>
-                  <TableHead>Warehouse</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead>{t.inventoryTypeHeader}</TableHead>
+                  <TableHead>{t.inventoryQuantityHeader}</TableHead>
+                  <TableHead>{t.inventoryReservedDeltaHeader}</TableHead>
+                  <TableHead>{t.inventoryOnHandDeltaHeader}</TableHead>
+                  <TableHead>{t.inventoryAtHeader}</TableHead>
+                  <TableHead>{t.inventoryWarehouseHeader}</TableHead>
+                  <TableHead className="text-right">{t.inventoryActionsHeader}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(history?.data || []).map((row: any) => (
                   <TableRow key={row.id}>
-                    <TableCell className="capitalize">{row.type}</TableCell>
+                    <TableCell>
+                      {operationLabels[row.type as InventoryOperationType] || row.type}
+                    </TableCell>
                     <TableCell>{row.quantity}</TableCell>
                     <TableCell>{row.reserved_delta}</TableCell>
                     <TableCell>{row.on_hand_delta}</TableCell>
                     <TableCell>{row.created_at}</TableCell>
                     <TableCell>{row.warehouse?.name}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" onClick={() => openOperate({ sku_id: row.product?.id, warehouse_id: row.warehouse?.id })}>Operate</Button>
+                      <Button size="sm" onClick={() => openOperate({ sku_id: row.product?.id, warehouse_id: row.warehouse?.id })}>
+                        {t.inventoryOperateButton}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -109,14 +128,19 @@ export default function MovementsPage() {
       <Sheet open={operateOpen} onOpenChange={setOperateOpen}>
         <SheetContent side="bottom" className="max-w-full">
           <SheetHeader>
-            <SheetTitle>Inventory Operation</SheetTitle>
+            <SheetTitle>{t.inventoryOperationTitle}</SheetTitle>
           </SheetHeader>
           <div className="space-y-3 py-2">
             <div className="grid grid-cols-2 gap-2">
-              <Input type="number" placeholder="SKU ID" value={operateForm.sku_id ?? ""} onChange={(e) => setOperateForm({ ...operateForm, sku_id: Number(e.target.value) })} />
+              <Input
+                type="number"
+                placeholder={t.inventorySkuPlaceholder}
+                value={operateForm.sku_id ?? ""}
+                onChange={(e) => setOperateForm({ ...operateForm, sku_id: Number(e.target.value) })}
+              />
               <Select value={operateForm.warehouse_id ? String(operateForm.warehouse_id) : ""} onValueChange={(v) => setOperateForm({ ...operateForm, warehouse_id: Number(v) })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Warehouse" />
+                  <SelectValue placeholder={t.inventorySelectWarehousePlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
                   {warehouses.map((w) => (
@@ -132,7 +156,9 @@ export default function MovementsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {(["receive","ship","reserve","release_reservation","adjust","count","return","damage","loss","transfer"] as InventoryOperationType[]).map((opt) => (
-                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    <SelectItem key={opt} value={opt}>
+                      {operationLabels[opt]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -141,7 +167,7 @@ export default function MovementsPage() {
             {operateForm.type === "transfer" ? (
               <Select value={operateForm.to_warehouse_id ? String(operateForm.to_warehouse_id) : ""} onValueChange={(v) => setOperateForm({ ...operateForm, to_warehouse_id: Number(v) })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="To Warehouse" />
+                  <SelectValue placeholder={t.inventoryToWarehousePlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
                   {warehouses.map((w) => (
@@ -150,11 +176,19 @@ export default function MovementsPage() {
                 </SelectContent>
               </Select>
             ) : null}
-            <Input placeholder="Notes (optional)" value={operateForm.notes || ""} onChange={(e) => setOperateForm({ ...operateForm, notes: e.target.value })} />
+            <Input
+              placeholder={t.inventoryNotesPlaceholder}
+              value={operateForm.notes || ""}
+              onChange={(e) => setOperateForm({ ...operateForm, notes: e.target.value })}
+            />
             <Separator />
             <div className="flex gap-2">
-              <Button className="flex-1" onClick={submitOperate} disabled={operating}>{operating ? "Processing..." : "Submit"}</Button>
-              <Button variant="outline" className="bg-transparent" onClick={() => setOperateOpen(false)}>Cancel</Button>
+              <Button className="flex-1" onClick={submitOperate} disabled={operating}>
+                {operating ? t.inventoryProcessing : t.inventorySubmitButton}
+              </Button>
+              <Button variant="outline" className="bg-transparent" onClick={() => setOperateOpen(false)}>
+                {t.cancel}
+              </Button>
             </div>
           </div>
         </SheetContent>
@@ -162,5 +196,4 @@ export default function MovementsPage() {
     </div>
   )
 }
-
 

@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useI18n } from "@/lib/i18n/context"
 
 const statusColors = {
   Submitted: "bg-blue-100 text-blue-800 border-blue-200",
@@ -50,8 +51,7 @@ export default function QuoteDetailPage() {
   const router = useRouter()
   const [quote, setQuote] = useState<QuoteWithAttachments | null>(null)
   const [loading, setLoading] = useState(true)
-  const [language] = useState<"en" | "ar">("en")
-  const isArabic = language === "ar"
+  const { t, formatMessage } = useI18n()
 
   useEffect(() => {
     fetchQuoteDetails()
@@ -71,8 +71,8 @@ export default function QuoteDetailPage() {
     } catch (error) {
       console.error("Failed to fetch quote details:", error)
       toast({
-        title: isArabic ? "خطأ" : "Error",
-        description: isArabic ? "فشل في تحميل تفاصيل العرض" : "Failed to load quote details",
+        title: t.error,
+        description: t.quoteLoadError,
         variant: "destructive",
       })
     } finally {
@@ -86,8 +86,8 @@ export default function QuoteDetailPage() {
     try {
       await withdrawQuote(quote.id)
       toast({
-        title: isArabic ? "تم السحب" : "Quote Withdrawn",
-        description: isArabic ? "تم سحب العرض بنجاح" : "Your quote has been withdrawn successfully",
+        title: t.quoteWithdrawSuccessTitle,
+        description: t.quoteWithdrawSuccessDescription,
       })
       
       // Update local state
@@ -95,8 +95,8 @@ export default function QuoteDetailPage() {
     } catch (error: any) {
       console.error("Error withdrawing quote:", error)
       toast({
-        title: isArabic ? "خطأ" : "Error",
-        description: error?.response?.data?.message || error?.message || (isArabic ? "فشل سحب العرض" : "Failed to withdraw quote"),
+        title: t.error,
+        description: error?.response?.data?.message || error?.message || t.quoteWithdrawError,
         variant: "destructive",
       })
     }
@@ -113,13 +113,11 @@ export default function QuoteDetailPage() {
   if (!quote) {
     return (
       <div className="text-center py-8">
-        <h2 className="text-xl font-semibold text-muted-foreground">
-          {isArabic ? "لم يتم العثور على العرض" : "Quote not found"}
-        </h2>
+        <h2 className="text-xl font-semibold text-muted-foreground">{t.quoteNotFound}</h2>
         <Link href="/dashboard/quotes">
           <Button className="mt-4" variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {isArabic ? "العودة للعروض" : "Back to Quotes"}
+            {t.quoteBackToQuotes}
           </Button>
         </Link>
       </div>
@@ -134,15 +132,15 @@ export default function QuoteDetailPage() {
           <Link href="/dashboard/quotes">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {isArabic ? "العودة" : "Back"}
+              {t.back}
             </Button>
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              {isArabic ? "عرض رقم" : "Quote"} #{quote.id}
+              {t.quoteLabel} #{quote.id}
             </h1>
             <p className="text-muted-foreground">
-              {isArabic ? "تقديم للطلب:" : "Submitted for:"} {quote.rfq.title}
+              {t.quoteSubmittedFor} {quote.rfq.title}
             </p>
           </div>
         </div>
@@ -160,22 +158,18 @@ export default function QuoteDetailPage() {
               <AlertDialogTrigger asChild>
                 <Button variant="outline">
                   <AlertCircle className="h-4 w-4 mr-2" />
-                  {isArabic ? "سحب العرض" : "Withdraw Quote"}
+                  {t.quoteWithdrawButton}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>{isArabic ? "تأكيد السحب" : "Confirm Withdrawal"}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {isArabic
-                      ? "هل أنت متأكد من سحب هذا العرض؟ لن تتمكن من التراجع عن هذا الإجراء."
-                      : "Are you sure you want to withdraw this quote? This action cannot be undone."}
-                  </AlertDialogDescription>
+                  <AlertDialogTitle>{t.quoteWithdrawConfirmTitle}</AlertDialogTitle>
+                  <AlertDialogDescription>{t.quoteWithdrawConfirmDescription}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>{isArabic ? "إلغاء" : "Cancel"}</AlertDialogCancel>
+                  <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleWithdraw}>
-                    {isArabic ? "سحب العرض" : "Withdraw Quote"}
+                    {t.quoteWithdrawButton}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -190,11 +184,11 @@ export default function QuoteDetailPage() {
           {/* Quote Details */}
           <Card>
             <CardHeader>
-              <CardTitle>{isArabic ? "تفاصيل العرض" : "Quote Details"}</CardTitle>
+              <CardTitle>{t.quoteDetailsTitle}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-medium mb-2">{isArabic ? "الرسالة" : "Message"}</h4>
+                <h4 className="font-medium mb-2">{t.quoteMessageLabel}</h4>
                 <p className="text-muted-foreground whitespace-pre-wrap">{quote.message}</p>
               </div>
 
@@ -204,7 +198,7 @@ export default function QuoteDetailPage() {
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">{isArabic ? "العملة" : "Currency"}</p>
+                    <p className="text-sm font-medium">{t.quoteCurrencyLabel}</p>
                     <p className="text-sm text-muted-foreground">{quote.currency}</p>
                   </div>
                 </div>
@@ -213,9 +207,9 @@ export default function QuoteDetailPage() {
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">{isArabic ? "مدة التسليم" : "Lead Time"}</p>
+                      <p className="text-sm font-medium">{t.quoteLeadTimeLabel}</p>
                       <p className="text-sm text-muted-foreground">
-                        {quote.lead_time_days} {isArabic ? "يوم" : "days"}
+                        {formatMessage("quoteLeadTimeValue", { days: quote.lead_time_days })}
                       </p>
                     </div>
                   </div>
@@ -224,7 +218,7 @@ export default function QuoteDetailPage() {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">{isArabic ? "تاريخ التقديم" : "Submitted At"}</p>
+                    <p className="text-sm font-medium">{t.quoteSubmittedAt}</p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(quote.submitted_at).toLocaleString()}
                     </p>
@@ -235,7 +229,7 @@ export default function QuoteDetailPage() {
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">{isArabic ? "تاريخ السحب" : "Withdrawn At"}</p>
+                      <p className="text-sm font-medium">{t.quoteWithdrawnAt}</p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(quote.withdrawn_at).toLocaleString()}
                       </p>
@@ -252,7 +246,7 @@ export default function QuoteDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  {isArabic ? "المرفقات" : "Attachments"}
+                  {t.quoteAttachmentsTitle}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -269,7 +263,7 @@ export default function QuoteDetailPage() {
                       <a href={attachment.url} target="_blank" rel="noopener noreferrer" download>
                         <Button size="sm" variant="outline">
                           <Download className="h-4 w-4 mr-2" />
-                          {isArabic ? "تحميل" : "Download"}
+                          {t.download}
                         </Button>
                       </a>
                     </div>
@@ -287,39 +281,39 @@ export default function QuoteDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                {isArabic ? "معلومات الطلب" : "RFQ Information"}
+                {t.quoteRfqInformationTitle}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <p className="text-sm font-medium">{isArabic ? "العنوان" : "Title"}</p>
+                <p className="text-sm font-medium">{t.quoteRfqTitleLabel}</p>
                 <p className="text-sm text-muted-foreground">{quote.rfq.title}</p>
               </div>
 
               <Separator />
 
               <div>
-                <p className="text-sm font-medium">{isArabic ? "الوصف" : "Description"}</p>
+                <p className="text-sm font-medium">{t.quoteRfqDescriptionLabel}</p>
                 <p className="text-sm text-muted-foreground line-clamp-3">{quote.rfq.description}</p>
               </div>
 
               <Separator />
 
               <div>
-                <p className="text-sm font-medium">{isArabic ? "الحالة" : "Status"}</p>
+                <p className="text-sm font-medium">{t.quoteRfqStatusLabel}</p>
                 <Badge className="mt-1">{quote.rfq.status}</Badge>
               </div>
 
               <Separator />
 
               <div>
-                <p className="text-sm font-medium mb-1">{isArabic ? "التواريخ" : "Dates"}</p>
+                <p className="text-sm font-medium mb-1">{t.quoteRfqDatesLabel}</p>
                 <div className="space-y-1 text-sm text-muted-foreground">
                   <p>
-                    {isArabic ? "تاريخ الإنشاء:" : "Created:"} {new Date(quote.rfq.created_at).toLocaleDateString()}
+                    {t.quoteRfqCreatedLabel} {new Date(quote.rfq.created_at).toLocaleDateString()}
                   </p>
                   <p>
-                    {isArabic ? "آخر تحديث:" : "Updated:"} {new Date(quote.rfq.updated_at).toLocaleDateString()}
+                    {t.quoteRfqUpdatedLabel} {new Date(quote.rfq.updated_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -327,7 +321,7 @@ export default function QuoteDetailPage() {
               <Link href={`/dashboard/rfq/${quote.rfq.id}`} className="block">
                 <Button className="w-full mt-4" variant="outline">
                   <FileText className="h-4 w-4 mr-2" />
-                  {isArabic ? "عرض تفاصيل الطلب" : "View RFQ Details"}
+                  {t.quoteViewRfqDetails}
                 </Button>
               </Link>
             </CardContent>
@@ -336,19 +330,19 @@ export default function QuoteDetailPage() {
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>{isArabic ? "إجراءات سريعة" : "Quick Actions"}</CardTitle>
+              <CardTitle>{t.quickActions}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <Link href="/dashboard/quotes">
                 <Button variant="outline" className="w-full bg-transparent">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  {isArabic ? "العودة للعروض" : "Back to Quotes"}
+                  {t.quoteBackToQuotes}
                 </Button>
               </Link>
               <Link href="/dashboard/rfq">
                 <Button variant="outline" className="w-full bg-transparent">
                   <FileText className="h-4 w-4 mr-2" />
-                  {isArabic ? "تصفح الطلبات" : "Browse RFQs"}
+                  {t.quotesBrowseRfqs}
                 </Button>
               </Link>
             </CardContent>
@@ -358,4 +352,3 @@ export default function QuoteDetailPage() {
     </div>
   )
 }
-

@@ -83,7 +83,7 @@ export default function ProductsPage() {
 
       <FiltersCard filters={filters} setFilters={setFilters} isArabic={isArabic} onRefresh={refetch} />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 grid-cols-2 sm:grid-cols-3">
         {loading ? (
           <div className="col-span-full flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

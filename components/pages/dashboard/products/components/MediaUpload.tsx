@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, UploadCloud } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/context';
+import { toast } from 'sonner';
 
 interface MediaUploadProps {
   existingMedia: { id: number; url: string; name: string }[];
@@ -19,7 +20,34 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      onNewFiles(Array.from(e.target.files));
+      const files = Array.from(e.target.files)
+      
+      // Check file types
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime']
+      const invalidFiles = files.filter(f => !validTypes.includes(f.type))
+      
+      if (invalidFiles.length > 0) {
+        toast.error("Invalid File Type", {
+          description: `${invalidFiles.length} file(s) skipped. Only images and videos are allowed.`
+        })
+      }
+      
+      const validFiles = files.filter(f => validTypes.includes(f.type))
+      
+      if (validFiles.length > 0) {
+        // Append new files to existing files instead of replacing
+        onNewFiles([...newFiles, ...validFiles]);
+        
+        toast.success(`${validFiles.length} file(s) added`, {
+          description: validFiles.length === 1 
+            ? validFiles[0].name 
+            : `${validFiles.length} media files ready to upload`,
+          duration: 3000
+        })
+      }
+      
+      // Reset input
+      e.target.value = ''
     }
   };
   const handleBrowseClick = () => {
@@ -45,7 +73,18 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
             {existingMedia.map(media => (
               <div key={media.id} className="relative group">
                 <img src={media.url} alt={media.name} className="h-24 w-24 object-cover rounded-md" />
-                <Button variant="destructive" size="icon" className="absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => onRemoveExisting(media.id)}>
+                <Button 
+                  variant="destructive" 
+                  size="icon" 
+                  className="absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100" 
+                  onClick={() => {
+                    onRemoveExisting(media.id)
+                    toast.info("Media marked for removal", {
+                      description: "This file will be deleted when you save the product",
+                      duration: 3000
+                    })
+                  }}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -53,7 +92,18 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
             {newFiles.map((file, i) => (
               <div key={i} className="relative group">
                 <img src={URL.createObjectURL(file)} alt={file.name} className="h-24 w-24 object-cover rounded-md" />
-                 <Button variant="destructive" size="icon" className="absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => onRemoveNew(file)}>
+                 <Button 
+                   variant="destructive" 
+                   size="icon" 
+                   className="absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100" 
+                   onClick={() => {
+                     onRemoveNew(file)
+                     toast("File removed", {
+                       description: file.name,
+                       duration: 2000
+                     })
+                   }}
+                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>

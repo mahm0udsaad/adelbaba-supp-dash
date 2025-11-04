@@ -38,6 +38,9 @@ export interface TranslationKeys {
   verify: string
   yes: string
   no: string
+  note: string
+  noResults: string
+  unknown?: string
 
   // Orders
   totalOrders: string
@@ -75,6 +78,8 @@ export interface TranslationKeys {
   unread: string
   replied: string
   urgent: string
+  awarded: string
+  closed?: string
 
   // User menu
   profile: string
@@ -241,6 +246,8 @@ export interface TranslationKeys {
   textiles: string
   homeKitchen: string
   renewableEnergy: string
+  construction?: string
+  packaging?: string
   priceFrom: string
   moq: string
   stock: string
@@ -326,4 +333,122 @@ export interface TranslationKeys {
   buyers: string
   sales: string
   failedToLoadAnalyticsData: string
+
+  // Inventory - Warehouses & Operations
+  warehousesTitle: string
+  warehouseDialogCreateTitle: string
+  warehouseDialogEditTitle: string
+  warehouseNameLabel: string
+  warehouseNamePlaceholder: string
+  warehouseCodeLabel: string
+  warehouseCodePlaceholder: string
+  warehouseCodeOptionalNote: string
+  warehouseCodeAuto: string
+  warehouseNewButton: string
+  warehouseCreateButton: string
+  warehouseSaveButton: string
+  warehouseTableId: string
+  warehouseTableName: string
+  warehouseTableCode: string
+  warehouseTableActions: string
+  warehouseCreatedTitle: string
+  warehouseCreatedDescription: string
+  warehouseCreateError: string
+  warehouseNameRequired: string
+  quickWarehouseTitle: string
+  quickWarehouseDescription: string
+  quickWarehouseNote: string
+
+  // Inventory Movements
+  inventoryMovementsTitle: string
+  inventorySkuPlaceholder: string
+  inventoryAllWarehousesOption: string
+  inventoryTypeHeader: string
+  inventoryQuantityHeader: string
+  inventoryReservedDeltaHeader: string
+  inventoryOnHandDeltaHeader: string
+  inventoryAtHeader: string
+  inventoryWarehouseHeader: string
+  inventoryActionsHeader: string
+  inventoryOperateButton: string
+  inventoryOperationTitle: string
+  inventorySelectWarehousePlaceholder: string
+  inventoryToWarehousePlaceholder: string
+  inventoryNotesPlaceholder: string
+  inventorySubmitButton: string
+  inventoryProcessing: string
+  inventoryOperationReceive: string
+  inventoryOperationShip: string
+  inventoryOperationReserve: string
+  inventoryOperationRelease: string
+  inventoryOperationAdjust: string
+  inventoryOperationCount: string
+  inventoryOperationReturn: string
+  inventoryOperationDamage: string
+  inventoryOperationLoss: string
+  inventoryOperationTransfer: string
+
+  // Quotes
+  quotesSubtitle: string
+  quotesStatsTotal: string
+  quotesStatsSubmitted: string
+  quotesStatsAwarded: string
+  quotesStatsWithdrawn: string
+  quotesListTitle: string
+  quotesEmptyTitle: string
+  quotesEmptyDescription: string
+  quotesBrowseRfqs: string
+  quoteLabel: string
+  quoteForRfq: string
+  quoteLeadTimeValue: string
+  quoteViewRfq: string
+  quoteWithdraw: string
+  quoteWithdrawButton: string
+  quoteWithdrawConfirmTitle: string
+  quoteWithdrawConfirmDescription: string
+  quoteWithdrawSuccessTitle: string
+  quoteWithdrawSuccessDescription: string
+  quoteWithdrawError: string
+  quoteNotFound: string
+  quoteLoadError: string
+  quoteSubmittedFor: string
+  quoteDetailsTitle: string
+  quoteMessageLabel: string
+  quoteCurrencyLabel: string
+  quoteLeadTimeLabel: string
+  quoteSubmittedAt: string
+  quoteWithdrawnAt: string
+  quoteAttachmentsTitle: string
+  quoteRfqInformationTitle: string
+  quoteRfqTitleLabel: string
+  quoteRfqDescriptionLabel: string
+  quoteRfqStatusLabel: string
+  quoteRfqDatesLabel: string
+  quoteRfqCreatedLabel: string
+  quoteRfqUpdatedLabel: string
+  quoteViewRfqDetails: string
+  quoteBackToQuotes: string
+
+  // RFQs
+  rfqSubtitle: string
+  rfqStatsOpen: string
+  rfqStatsSubmitted: string
+  rfqStatsAwarded: string
+  rfqStatsWinRate: string
+  rfqSearchPlaceholder: string
+  rfqMatchingOnly: string
+  rfqEmptyTitle: string
+  rfqEmptyDescription: string
+  rfqUnknownCompany: string
+  rfqUnknownCountry: string
+  rfqNoDescription: string
+  rfqTargetQuantity: string
+  rfqTargetPrice: string
+  rfqQuotesCount: string
+  rfqQuoteStatusLabel: string
+  rfqCreateQuote: string
+  rfqPriorityHigh: string
+  rfqPriorityMedium: string
+  rfqPriorityLow: string
+  rfqMetricsError: string
 }

@@ -18,7 +18,10 @@ import { MediaUpload } from "./MediaUpload"
 import { PricingTiered } from "./PricingTiered"
 import { EnhancedSkuManager } from "./EnhancedSkuManager"
 import { ProductContent } from "./ProductContent"
-import { Wand2, Loader2, AlertCircle, CheckCircle } from "lucide-react"
+import { CategorySelector } from "./CategorySelector"
+import { QuickWarehouseModal } from "./QuickWarehouseModal"
+import { Wand2, Loader2, AlertCircle, CheckCircle, FolderTree } from "lucide-react"
+import { toast } from "sonner"
 
 const PricingRange = ({ range, setRange, errors }: { 
   range: { min_price: string; max_price: string }; 
@@ -287,6 +290,9 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [categoryId, setCategoryId] = useState("")
+  const [categoryName, setCategoryName] = useState("")
+  const [categoryParentName, setCategoryParentName] = useState("")
+  const [categorySelectorOpen, setCategorySelectorOpen] = useState(false)
   const [moq, setMoq] = useState(1)
   const [productUnitId, setProductUnitId] = useState(1)
   const [isActive, setIsActive] = useState(true)
@@ -301,7 +307,86 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
   const [enhancedSkus, setEnhancedSkus] = useState<any[]>([])
   const [content, setContent] = useState<any>(null)
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [selectedWarehouseIds, setSelectedWarehouseIds] = useState<number[]>([])
   const [loadingWarehouses, setLoadingWarehouses] = useState<boolean>(false)
+  const [quickWarehouseModalOpen, setQuickWarehouseModalOpen] = useState(false)
+  const [hasDraft, setHasDraft] = useState(false)
+
+  // LocalStorage key for draft
+  const DRAFT_KEY = 'product_form_draft'
+
+  // Save draft to localStorage
+  const saveDraft = () => {
+    const draft = {
+      name,
+      description,
+      categoryId,
+      categoryName,
+      categoryParentName,
+      selectedWarehouseIds,
+      moq,
+      productUnitId,
+      isActive,
+      priceType,
+      rangePrice,
+      tieredPrices,
+      enhancedSkus,
+      content,
+      timestamp: new Date().toISOString()
+    }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    setHasDraft(true)
+    toast.success("Draft Saved", {
+      description: "Your product draft has been saved locally"
+    })
+  }
+
+  // Load draft from localStorage
+  const loadDraft = () => {
+    const draftStr = localStorage.getItem(DRAFT_KEY)
+    if (draftStr) {
+      try {
+        const draft = JSON.parse(draftStr)
+        setName(draft.name || "")
+        setDescription(draft.description || "")
+        setCategoryId(draft.categoryId || "")
+        setCategoryName(draft.categoryName || "")
+        setCategoryParentName(draft.categoryParentName || "")
+        setSelectedWarehouseIds(draft.selectedWarehouseIds || [])
+        setMoq(draft.moq || 1)
+        setProductUnitId(draft.productUnitId || 1)
+        setIsActive(draft.isActive ?? true)
+        setPriceType(draft.priceType || "sku")
+        setRangePrice(draft.rangePrice || { min_price: "", max_price: "" })
+        setTieredPrices(draft.tieredPrices || [])
+        setEnhancedSkus(draft.enhancedSkus || [])
+        setContent(draft.content || null)
+        setErrors({})
+        toast.success("Draft Loaded", {
+          description: "Your saved draft has been restored"
+        })
+      } catch (error) {
+        console.error('Failed to load draft:', error)
+      }
+    }
+  }
+
+  // Clear draft from localStorage
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY)
+    setHasDraft(false)
+    toast.success("Draft Cleared", {
+      description: "Your saved draft has been removed"
+    })
+  }
+
+  // Check for draft on mount
+  useEffect(() => {
+    if (!isEditMode) {
+      const draftStr = localStorage.getItem(DRAFT_KEY)
+      setHasDraft(!!draftStr)
+    }
+  }, [isEditMode])
 
   // Auto-fill function for development
   const fillSampleData = () => {
@@ -349,9 +434,11 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
       newErrors.pricing = "At least one SKU variant is required for SKU pricing"
     }
 
-    // Warn if no warehouses are available (non-blocking for range/tiered, but important)
+    // Check if warehouses are available and selected (required for all price types)
     if (warehouses.length === 0) {
-      newErrors.warehouses = "Warning: No warehouses configured. Inventory tracking will be limited."
+      newErrors.warehouses = "At least one warehouse is required. Please create a warehouse first."
+    } else if (selectedWarehouseIds.length === 0) {
+      newErrors.selectedWarehouses = "Please select at least one warehouse for inventory tracking."
     }
 
     // Validate SKUs if they exist
@@ -393,6 +480,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
       setName(initialData.name)
       setDescription(initialData.description)
       setCategoryId(String(initialData.category.id))
+      setCategoryName(initialData.category.name || "")
       setMoq(initialData.moq)
       // setProductUnitId(initialData.product_unit_id)
       setIsActive(initialData.is_active)
@@ -411,21 +499,29 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
     }
   }, [initialData])
 
+  // Fetch warehouses function
+  const fetchWarehouses = async () => {
+    try {
+      setLoadingWarehouses(true)
+      const res = await listWarehouses()
+      const warehouseList = res.data || []
+      setWarehouses(warehouseList)
+      // Auto-select first warehouse if available and no warehouse is selected
+      if (warehouseList.length > 0 && selectedWarehouseIds.length === 0 && !isEditMode) {
+        setSelectedWarehouseIds([warehouseList[0].id])
+      }
+    } catch (e) {
+      // Non-blocking: keep defaults if fetch fails
+      console.error('Failed to fetch warehouses:', e)
+    } finally {
+      setLoadingWarehouses(false)
+    }
+  }
+
   // Load warehouses for SKU inventory selection
   useEffect(() => {
-    const fetchWarehouses = async () => {
-      try {
-        setLoadingWarehouses(true)
-        const res = await listWarehouses()
-        setWarehouses(res.data || [])
-      } catch (e) {
-        // Non-blocking: keep defaults if fetch fails
-      } finally {
-        setLoadingWarehouses(false)
-      }
-    }
     fetchWarehouses()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clear errors when user starts typing
   useEffect(() => {
@@ -564,72 +660,134 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
           })
         }
         
-        // Attributes
-        if (sku.attributes && sku.attributes.length > 0) {
+        // Attributes - only append if we have valid attributes
+        if (sku.attributes && Array.isArray(sku.attributes) && sku.attributes.length > 0) {
           sku.attributes.forEach((attr: any, attrIndex: number) => {
-            fd.append(`skus[${skuIndex}][attributes][${attrIndex}][type]`, String(attr.type))
-            if (attr.variation_value_id) {
-              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][variation_value_id]`, String(attr.variation_value_id))
-            }
-            if (attr.hex_color) {
-              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][hex_color]`, String(attr.hex_color))
-            }
-            if (attr.image && attr.image instanceof File) {
-              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][image]`, attr.image)
+            if (attr && attr.type) {
+              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][type]`, String(attr.type))
+              if (attr.variation_value_id) {
+                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][variation_value_id]`, String(attr.variation_value_id))
+              }
+              if (attr.hex_color) {
+                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][hex_color]`, String(attr.hex_color))
+              }
+              if (attr.image && attr.image instanceof File) {
+                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][image]`, attr.image)
+              }
             }
           })
         }
       }
 
+      // SKUs: ALWAYS required by API regardless of price type
       if (priceType === 'sku' && enhancedSkus && enhancedSkus.length > 0) {
         // Use user-defined SKUs for SKU pricing
         enhancedSkus.forEach((sku: any, skuIndex: number) => {
           appendSkuToFormData(sku, skuIndex)
         })
-      } else {
-        // For 'range' and 'tiered' pricing, create a default SKU
-        // The API requires at least one SKU for inventory tracking
+      } else if (selectedWarehouseIds.length > 0) {
+        // For range/tiered pricing, create a default SKU for inventory tracking
+        // API requires SKUs even for range/tiered pricing
         const defaultPrice = priceType === 'range' 
           ? parseFloat(rangePrice.min_price || '0') 
           : (tieredPrices.length > 0 ? tieredPrices[0].price : 0)
 
         const defaultSku = {
-          code: `SKU-${name.substring(0, 10).replace(/\s+/g, '-').toUpperCase()}-DEFAULT`,
+          code: `SKU-${name.substring(0, 10).replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`,
           price: defaultPrice,
           package_details: {
-            mass_unit: 'lb',
-            weight: 1,
-            distance_unit: 'in',
-            height: 1,
-            length: 1,
-            width: 1
+            mass_unit: 'kg',
+            weight: '1',
+            distance_unit: 'cm',
+            height: '10',
+            length: '10',
+            width: '10'
           },
           inventory: {
-            warehouses: warehouses.length > 0 ? [{
-              warehouse_id: warehouses[0].id,
+            warehouses: selectedWarehouseIds.map(warehouseId => ({
+              warehouse_id: warehouseId,
               on_hand: 0,
               reserved: 0,
               reorder_point: 5,
               restock_level: 20,
               track_inventory: true
-            }] : []
+            }))
           },
-          attributes: [] // Empty for default SKU
+          attributes: [
+            {
+              type: 'select',
+              variation_value_id: 1, // Default variation - API requires this
+              value: 'Standard'
+            }
+          ]
         }
         
         appendSkuToFormData(defaultSku, 0)
       }
 
       // Add media files (Laravel array notation)
-      newMediaFiles.forEach((file) => {
-        fd.append('media[]', file)
-      })
+      // Only append media if there are files to upload
+      if (newMediaFiles.length > 0) {
+        newMediaFiles.forEach((file) => {
+          fd.append('media[]', file)
+        })
+      }
 
       if (isEditMode) {
-        mediaToRemove.forEach(id => fd.append('media[remove][]', String(id)))
+        if (mediaToRemove.length > 0) {
+          mediaToRemove.forEach(id => fd.append('media[remove][]', String(id)))
+        }
+      }
+
+      // Debug: Log FormData contents
+      if (process.env.NODE_ENV === 'development') {
+        console.group('📦 FormData being sent to API:')
+        console.log('=== STRUCTURED VIEW ===')
+        
+        // Build a structured object for easier comparison with API docs
+        const structuredData: any = {
+          product: {},
+          media: [],
+          skus: [],
+          range_price: {},
+          tiered_prices: []
+        }
+        
+        for (const [key, value] of fd.entries()) {
+          if (value instanceof File) {
+            console.log(`${key}:`, `[File: ${value.name}, ${value.size} bytes]`)
+            structuredData.media.push({ name: value.name, size: value.size })
+          } else {
+            console.log(`${key}:`, value)
+            
+            // Parse key structure for display
+            if (key.startsWith('product[')) {
+              const match = key.match(/product\[(.+?)\]/)
+              if (match) {
+                structuredData.product[match[1]] = value
+              }
+            } else if (key.startsWith('skus[')) {
+              // Just note that SKUs are present
+              if (!structuredData._skuCount) structuredData._skuCount = 0
+              structuredData._skuCount++
+            }
+          }
+        }
+        
+        console.log('=== SUMMARY ===')
+        console.log('Product fields:', Object.keys(structuredData.product).length)
+        console.log('Media files:', structuredData.media.length)
+        console.log('SKU fields:', structuredData._skuCount || 0)
+        console.log('Price type:', structuredData.product.price_type)
+        console.groupEnd()
       }
 
       await onSubmit(fd)
+      // Clear draft on successful submission
+      if (!isEditMode) {
+        localStorage.removeItem(DRAFT_KEY)
+        setHasDraft(false)
+      }
     } catch (error) {
       console.error('Form submission error:', error)
     } finally {
@@ -638,17 +796,40 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
   }
 
   const renderPricingSection = () => {
+    // Filter warehouses to only show selected ones for SKU manager
+    const selectedWarehouses = warehouses.filter(w => selectedWarehouseIds.includes(w.id))
+    
     switch (priceType) {
       case "range": return <PricingRange range={rangePrice} setRange={setRangePrice} errors={errors} />
       case "tiered": return <PricingTiered tiers={tieredPrices} setTiers={setTieredPrices} />
-      case "sku": return <EnhancedSkuManager skus={enhancedSkus} setSkus={setEnhancedSkus} warehouses={warehouses} />
+      case "sku": return <EnhancedSkuManager skus={enhancedSkus} setSkus={setEnhancedSkus} warehouses={selectedWarehouses} />
       default: return null
     }
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Development Auto-Fill */}
+    <>
+      {/* Category Selector Modal */}
+      <CategorySelector
+        open={categorySelectorOpen}
+        onOpenChange={setCategorySelectorOpen}
+        selectedCategoryId={categoryId}
+        onSelect={(id, name, parentName) => {
+          setCategoryId(id)
+          setCategoryName(name)
+          setCategoryParentName(parentName || "")
+        }}
+      />
+
+      {/* Quick Warehouse Creation Modal */}
+      <QuickWarehouseModal
+        open={quickWarehouseModalOpen}
+        onOpenChange={setQuickWarehouseModalOpen}
+        onWarehouseCreated={fetchWarehouses}
+      />
+
+      <div className="space-y-6">
+      {/* Header with Development Auto-Fill and Draft Management */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
@@ -659,22 +840,139 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
           </p>
         </div>
         
-        {isDevelopment && !isEditMode && (
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={fillSampleData}
-            className="flex items-center gap-2 border-dashed"
-          >
-            <Wand2 className="h-4 w-4" />
-            Fill Sample Data
-            <Badge variant="secondary" className="text-xs">DEV</Badge>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {!isEditMode && hasDraft && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={loadDraft}
+              className="flex items-center gap-2"
+            >
+              Load Draft
+            </Button>
+          )}
+          
+          {isDevelopment && !isEditMode && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={fillSampleData}
+              className="flex items-center gap-2 border-dashed"
+            >
+              <Wand2 className="h-4 w-4" />
+              Fill Sample Data
+              <Badge variant="secondary" className="text-xs">DEV</Badge>
+            </Button>
+          )}
+        </div>
       </div>
 
       <form id="product-form" onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
+          {/* Warehouse Selection - Required for all products */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-medium">📦</div>
+                <div>
+                  <CardTitle className="text-lg">Select Warehouses</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Choose which warehouses will track inventory for this product
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingWarehouses ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">Loading warehouses...</span>
+                </div>
+              ) : warehouses.length === 0 ? (
+                <div className="text-center py-8 space-y-3">
+                  <AlertCircle className="h-12 w-12 text-yellow-600 mx-auto" />
+                  <div>
+                    <p className="font-medium text-foreground">No Warehouses Found</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Please create a warehouse before adding products
+                    </p>
+                  </div>
+                  {errors.warehouses && (
+                    <div className="flex items-center justify-center gap-2 text-sm text-red-600">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.warehouses}
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="default"
+                    className="w-full"
+                    onClick={() => setQuickWarehouseModalOpen(true)}
+                  >
+                    Create Warehouse
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {warehouses.map((warehouse) => {
+                      const isSelected = selectedWarehouseIds.includes(warehouse.id)
+                      
+                      const toggleWarehouse = () => {
+                        setSelectedWarehouseIds(prev => 
+                          prev.includes(warehouse.id)
+                            ? prev.filter(id => id !== warehouse.id)
+                            : [...prev, warehouse.id]
+                        )
+                      }
+                      
+                      return (
+                        <div
+                          key={warehouse.id}
+                          onClick={toggleWarehouse}
+                          className={`relative flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                            isSelected
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                          }`}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            onClick={(e) => e.stopPropagation()}
+                            className="pointer-events-none"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm truncate">{warehouse.name}</h4>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {warehouse.code || `ID: ${warehouse.id}`}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  
+                  {selectedWarehouseIds.length > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      {selectedWarehouseIds.length === 1
+                        ? "1 warehouse selected"
+                        : `${selectedWarehouseIds.length} warehouses selected`
+                      }
+                    </div>
+                  )}
+                  
+                  {errors.selectedWarehouses && (
+                    <div className="flex items-center gap-2 text-sm text-red-600">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.selectedWarehouses}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -724,20 +1022,29 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
 
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="category" className="text-sm font-medium">
+                  <Label className="text-sm font-medium">
                     {t.category} *
                   </Label>
-                  <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger className={errors.categoryId ? "border-red-500 focus-visible:ring-red-500" : ""}>
-                      <SelectValue placeholder={t.selectCategory} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Electronics & Electrical</SelectItem>
-                      <SelectItem value="2">Textiles & Apparel</SelectItem>
-                      <SelectItem value="3">Home & Kitchen</SelectItem>
-                      <SelectItem value="4">Renewable Energy</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCategorySelectorOpen(true)}
+                    className={`w-full justify-start font-normal ${errors.categoryId ? "border-red-500" : ""}`}
+                  >
+                    <FolderTree className="h-4 w-4 mr-2 flex-shrink-0" />
+                    {categoryName ? (
+                      <div className="flex flex-col items-start text-left overflow-hidden">
+                        <span className="truncate w-full">{categoryName}</span>
+                        {categoryParentName && (
+                          <span className="text-xs text-muted-foreground truncate w-full">
+                            {categoryParentName}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">{t.selectCategory || "Select Category"}</span>
+                    )}
+                  </Button>
                   {errors.categoryId && (
                     <div className="flex items-center gap-2 text-sm text-red-600">
                       <AlertCircle className="h-4 w-4" />
@@ -906,26 +1213,29 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                 </Button>
                 
                 {!isEditMode && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={async () => {
-                      const originalActive = isActive
-                      setIsActive(false)
-                      // Wait for next tick to ensure state is updated
-                      await new Promise(resolve => setTimeout(resolve, 0))
-                      const formElement = document.getElementById('product-form') as HTMLFormElement
-                      if (formElement) {
-                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true })
-                        formElement.dispatchEvent(submitEvent)
-                      }
-                      setIsActive(originalActive) // Restore original state
-                    }}
-                    disabled={loading || isSubmitting}
-                  >
-                    Save as Draft
-                  </Button>
+                  <>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={saveDraft}
+                      disabled={loading || isSubmitting}
+                    >
+                      Save as Draft
+                    </Button>
+                    
+                    {hasDraft && (
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        className="w-full text-muted-foreground"
+                        onClick={clearDraft}
+                        disabled={loading || isSubmitting}
+                      >
+                        Clear Draft
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </CardContent>
@@ -961,5 +1271,6 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
         </div>
       </form>
     </div>
+    </>
   )
 }

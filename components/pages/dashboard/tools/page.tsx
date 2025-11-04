@@ -321,13 +321,13 @@ export default function ToolsPage() {
 
       {/* Tools Grid */}
       {loading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 grid-cols-2 sm:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-48 bg-muted animate-pulse rounded" />
           ))}
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 grid-cols-2 sm:grid-cols-3">
           {Array.isArray(tools) &&
             tools.map((tool) => {
               const IconComponent = iconMap[tool.icon as keyof typeof iconMap] || Wrench

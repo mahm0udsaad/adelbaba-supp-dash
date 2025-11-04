@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useI18n } from "@/lib/i18n/context"
 
 const statusColors = {
   Submitted: "bg-blue-100 text-blue-800 border-blue-200",
@@ -31,8 +32,7 @@ const statusColors = {
 
 export default function QuotesPage() {
   const [page, setPage] = useState(1)
-  const [language] = useState<"en" | "ar">("en")
-  const isArabic = language === "ar"
+  const { t, formatMessage } = useI18n()
 
   const fetchQuotes = useCallback(() => listQuotes({ page }), [page])
   const fallbackQuotes = useCallback(
@@ -54,8 +54,8 @@ export default function QuotesPage() {
     try {
       await withdrawQuote(quoteId)
       toast({
-        title: isArabic ? "تم السحب" : "Quote Withdrawn",
-        description: isArabic ? "تم سحب العرض بنجاح" : "Your quote has been withdrawn successfully",
+        title: t.quoteWithdrawSuccessTitle,
+        description: t.quoteWithdrawSuccessDescription,
       })
       
       // Update local state optimistically
@@ -71,8 +71,8 @@ export default function QuotesPage() {
     } catch (error: any) {
       console.error("Error withdrawing quote:", error)
       toast({
-        title: isArabic ? "خطأ" : "Error",
-        description: error?.response?.data?.message || error?.message || (isArabic ? "فشل سحب العرض" : "Failed to withdraw quote"),
+        title: t.error,
+        description: error?.response?.data?.message || error?.message || t.quoteWithdrawError,
         variant: "destructive",
       })
     }
@@ -83,14 +83,12 @@ export default function QuotesPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{isArabic ? "عروضي" : "My Quotes"}</h1>
-          <p className="text-muted-foreground">
-            {isArabic ? "إدارة جميع عروض الأسعار المقدمة" : "Manage all your submitted quotes"}
-          </p>
+          <h1 className="text-3xl font-bold text-foreground">{t.quotes}</h1>
+          <p className="text-muted-foreground">{t.quotesSubtitle}</p>
         </div>
         <Button onClick={() => refetch()} variant="outline" disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          {isArabic ? "تحديث" : "Refresh"}
+          {t.refresh}
         </Button>
       </div>
 
@@ -98,7 +96,7 @@ export default function QuotesPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{isArabic ? "إجمالي العروض" : "Total Quotes"}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.quotesStatsTotal}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -108,7 +106,7 @@ export default function QuotesPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{isArabic ? "قيد المراجعة" : "Submitted"}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.quotesStatsSubmitted}</CardTitle>
             <Clock className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
@@ -120,7 +118,7 @@ export default function QuotesPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{isArabic ? "فائزة" : "Awarded"}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.quotesStatsAwarded}</CardTitle>
             <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -132,7 +130,7 @@ export default function QuotesPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{isArabic ? "مسحوبة" : "Withdrawn"}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.quotesStatsWithdrawn}</CardTitle>
             <AlertCircle className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
@@ -146,7 +144,7 @@ export default function QuotesPage() {
       {/* Quotes List */}
       <Card>
         <CardHeader>
-          <CardTitle>{isArabic ? "جميع العروض" : "All Quotes"}</CardTitle>
+          <CardTitle>{t.quotesListTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -156,15 +154,11 @@ export default function QuotesPage() {
           ) : !quotesResponse || quotesResponse.data.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8">
               <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground">
-                {isArabic ? "لا توجد عروض أسعار" : "No quotes yet"}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {isArabic ? "ابدأ بتقديم عروض أسعار للطلبات المتاحة" : "Start by submitting quotes for available RFQs"}
-              </p>
+              <h3 className="text-lg font-medium text-muted-foreground">{t.quotesEmptyTitle}</h3>
+              <p className="text-sm text-muted-foreground">{t.quotesEmptyDescription}</p>
               <Link href="/dashboard/rfq">
                 <Button className="mt-4">
-                  {isArabic ? "تصفح الطلبات" : "Browse RFQs"}
+                  {t.quotesBrowseRfqs}
                 </Button>
               </Link>
             </div>
@@ -176,7 +170,7 @@ export default function QuotesPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="text-lg font-semibold">
-                          {isArabic ? "عرض رقم" : "Quote"} #{quote.id}
+                          {t.quoteLabel} #{quote.id}
                         </h3>
                         <Badge
                           className={
@@ -188,7 +182,7 @@ export default function QuotesPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mb-2">
-                        {isArabic ? "للطلب:" : "For RFQ:"} <span className="font-medium">{quote.rfq.title}</span>
+                        {t.quoteForRfq} <span className="font-medium">{quote.rfq.title}</span>
                       </p>
                       <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{quote.message}</p>
 
@@ -200,9 +194,7 @@ export default function QuotesPage() {
                         {quote.lead_time_days > 0 && (
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>
-                              {quote.lead_time_days} {isArabic ? "يوم" : "days"}
-                            </span>
+                            <span>{formatMessage("quoteLeadTimeValue", { days: quote.lead_time_days })}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-1">
@@ -216,13 +208,13 @@ export default function QuotesPage() {
                       <Link href={`/dashboard/quotes/${quote.id}`}>
                         <Button size="sm" variant="outline">
                           <Eye className="h-4 w-4 mr-2" />
-                          {isArabic ? "التفاصيل" : "Details"}
+                          {t.details}
                         </Button>
                       </Link>
                       <Link href={`/dashboard/rfq/${quote.rfq.id}`}>
                         <Button size="sm" variant="outline" className="bg-transparent">
                           <FileText className="h-4 w-4 mr-2" />
-                          {isArabic ? "عرض الطلب" : "View RFQ"}
+                          {t.quoteViewRfq}
                         </Button>
                       </Link>
                       {quote.status === "Submitted" && (
@@ -230,24 +222,22 @@ export default function QuotesPage() {
                           <AlertDialogTrigger asChild>
                             <Button size="sm" variant="ghost">
                               <AlertCircle className="h-4 w-4 mr-2" />
-                              {isArabic ? "سحب" : "Withdraw"}
+                              {t.quoteWithdraw}
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>
-                                {isArabic ? "تأكيد السحب" : "Confirm Withdrawal"}
+                                {t.quoteWithdrawConfirmTitle}
                               </AlertDialogTitle>
                               <AlertDialogDescription>
-                                {isArabic
-                                  ? "هل أنت متأكد من سحب هذا العرض؟ لن تتمكن من التراجع عن هذا الإجراء."
-                                  : "Are you sure you want to withdraw this quote? This action cannot be undone."}
+                                {t.quoteWithdrawConfirmDescription}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>{isArabic ? "إلغاء" : "Cancel"}</AlertDialogCancel>
+                              <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
                               <AlertDialogAction onClick={() => handleWithdraw(quote.id)}>
-                                {isArabic ? "سحب العرض" : "Withdraw Quote"}
+                                {t.quoteWithdrawButton}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -274,9 +264,7 @@ export default function QuotesPage() {
                     <PaginationItem>
                       <div className="px-3 py-2 text-sm text-muted-foreground">
                         {quotesResponse.meta.from === null && quotesResponse.meta.to === null
-                          ? isArabic
-                            ? "لا نتائج"
-                            : "No results"
+                          ? t.noResults
                           : `${quotesResponse.meta.from || 0}-${quotesResponse.meta.to || 0} / ${quotesResponse.meta.total || 0}`}
                       </div>
                     </PaginationItem>
@@ -301,4 +289,3 @@ export default function QuotesPage() {
     </div>
   )
 }
-

@@ -5,9 +5,11 @@ import { Menu } from "lucide-react"
 
 interface MobileMenuButtonProps {
   onClick: () => void
+  isSidebarOpen: boolean
 }
 
-export function MobileMenuButton({ onClick }: MobileMenuButtonProps) {
+export function MobileMenuButton({ isSidebarOpen, onClick }: MobileMenuButtonProps) {
+  if (isSidebarOpen) return null;
   return (
     <Button
       variant="ghost"

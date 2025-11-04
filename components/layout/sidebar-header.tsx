@@ -14,24 +14,21 @@ export function SidebarHeader({ sidebarOpen, setSidebarOpen, toggleLanguage }: S
   const { t, isArabic } = useI18n()
 
   return (
-    <div className="flex items-center justify-between p-6 border-b border-sidebar-border">
-      <div className="flex items-center gap-2 flex-1">
+    <div className="flex items-center justify-between sm:pt-0 p-6 pt-6 border-b border-sidebar-border">
+      <div className="flex items-center justify-between gap-2 flex-1">
         {/* Logo Container */}
-        <div className="flex items-center gap-2">
-          <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-sm border border-primary/20">
-            <img
-              src="/logo-black.webp"
+       <div className="flex flex-col items-center">
+           <img
+              src="/LOGO FINAL.svg"
               alt="Adelbaba Logo"
-              className="w-8 h-8 object-contain filter brightness-0 invert"
+              className="size-24 object-contain"
             />
-          </div>
-        </div>
 
         {/* Brand Name */}
-        <div className="flex-1">
-          <h1 className="text-xl font-bold text-foreground tracking-tight">Adelbaba</h1>
+        <div className="flex-1 hidden sm:block">
           <p className="text-[10px] text-muted-foreground">Supplier Dashboard</p>
         </div>
+         </div>
 
         {/* Action Icons */}
         <div className="flex items-center gap-1">
