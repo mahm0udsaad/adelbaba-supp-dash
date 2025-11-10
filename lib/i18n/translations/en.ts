@@ -86,6 +86,11 @@ export const en: TranslationKeys = {
   settings: "Settings",
   logout: "Log out",
   notifications: "Notifications",
+  notificationsSheetSubtitle: "Stay up to date with the latest activity across your account.",
+  notificationsEmptyState: "You're all caught up!",
+  notificationsEmptyStateSubtitle: "We'll let you know when something new arrives.",
+  failedToLoadNotifications: "Unable to load notifications",
+  retry: "Retry",
 
   // Common phrases
   item: "item",

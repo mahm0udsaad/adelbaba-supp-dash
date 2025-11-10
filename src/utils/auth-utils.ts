@@ -140,7 +140,7 @@ export function needsOnboarding(completionStatus: any): boolean {
   // Count how many required steps are incomplete (falsy)
   const incompleteCount = [
     completionStatus.profile_completed,
-    completionStatus.shipping_configured,
+    completionStatus.warehouse_setup || completionStatus.shipping_configured, // Support both new and old field
     completionStatus.certificates_uploaded,
     completionStatus.first_product_added,
   ].reduce((acc, val) => acc + (val ? 0 : 1), 0)

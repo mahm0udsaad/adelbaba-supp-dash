@@ -86,7 +86,7 @@ export function AuthUsageExample() {
         {authData.completionStatus ? (
           <>
             <p>Profile Completed: {authData.completionStatus.profile_completed ? "Yes" : "No"}</p>
-            <p>Shipping Configured: {authData.completionStatus.shipping_configured ? "Yes" : "No"}</p>
+            <p>Warehouse Setup: {authData.completionStatus.warehouse_setup ? "Yes" : "No"}</p>
             <p>Certificates Uploaded: {authData.completionStatus.certificates_uploaded ? "Yes" : "No"}</p>
             <p>First Product Added: {authData.completionStatus.first_product_added ? "Yes" : "No"}</p>
           </>

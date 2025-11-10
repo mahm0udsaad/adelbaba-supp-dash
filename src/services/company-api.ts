@@ -123,9 +123,10 @@ export class CompanyApiService {
    */
   static async getCompletionStatus(): Promise<{
     profile_completed: boolean
-    shipping_configured: boolean
+    warehouse_setup?: boolean
     certificates_uploaded: boolean
     first_product_added: boolean
+    shipping_configured?: boolean // Deprecated - kept for backward compatibility
   }> {
     try {
       const company = await this.getCompany()
@@ -133,16 +134,18 @@ export class CompanyApiService {
       // Determine completion status based on company data
       return {
         profile_completed: !!(company?.name && company?.description && company?.contacts?.length),
-        shipping_configured: false, // This would need to be determined based on shipping configuration
+        warehouse_setup: false, // This would need to be determined based on warehouse setup
         certificates_uploaded: false, // This would need to be determined based on uploaded certificates
         first_product_added: false, // This would need to be determined based on products
+        shipping_configured: false, // Kept for backward compatibility
       }
     } catch (error) {
       return {
         profile_completed: false,
-        shipping_configured: false,
+        warehouse_setup: false,
         certificates_uploaded: false,
         first_product_added: false,
+        shipping_configured: false,
       }
     }
   }

@@ -86,6 +86,11 @@ export interface TranslationKeys {
   settings: string
   logout: string
   notifications: string
+  notificationsSheetSubtitle: string
+  notificationsEmptyState: string
+  notificationsEmptyStateSubtitle: string
+  failedToLoadNotifications: string
+  retry: string
 
   // Common phrases
   item: string

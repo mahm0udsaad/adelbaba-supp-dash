@@ -86,6 +86,11 @@ export const ar: TranslationKeys = {
   settings: "الإعدادات",
   logout: "تسجيل الخروج",
   notifications: "الإشعارات",
+  notificationsSheetSubtitle: "تابع آخر التحديثات في حسابك.",
+  notificationsEmptyState: "لا توجد إشعارات جديدة!",
+  notificationsEmptyStateSubtitle: "سنخبرك عند وصول أي تحديث جديد.",
+  failedToLoadNotifications: "تعذر تحميل الإشعارات",
+  retry: "إعادة المحاولة",
 
   // Common phrases
   item: "منتج",

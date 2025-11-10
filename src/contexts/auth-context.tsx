@@ -59,9 +59,10 @@ export interface Company {
 
 export interface CompletionStatus {
   profile_completed: boolean
-  shipping_configured: boolean
+  warehouse_setup?: boolean
   certificates_uploaded: boolean
   first_product_added: boolean
+  shipping_configured?: boolean // Deprecated - kept for backward compatibility
 }
 
 export interface AuthData {

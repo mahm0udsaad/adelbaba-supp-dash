@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   CheckCircle,
   Building,
-  Truck,
+  Warehouse,
   FileText,
   Package,
       Plus,
@@ -20,11 +20,11 @@ import { useAuth } from "@/src/contexts/auth-context"
 import { useCompany as useCompanyHook } from "@/src/hooks/use-company"
 import { factoryMediaApi, type FactoryImage } from "@/src/services/factory-media"
 import { certificatesApi, type CertificateItem, type PaginatedResponse } from "@/src/services/certificates"
-import { shipmentsApi, type ShippoCarrier } from "@/src/services/shipments"
+import { listWarehouses, type Warehouse } from "@/src/services/inventory-api"
 import BusinessProfileStep from "@/src/features/onboarding/BusinessProfileStep"
 import FactoryImagesStep from "@/src/features/onboarding/FactoryImagesStep"
 import CertificatesStep from "@/src/features/onboarding/CertificatesStep"
-import ShippingConfigurationStep from "@/src/features/onboarding/ShippingConfigurationStep"
+import WarehouseSetupStep from "@/src/features/onboarding/WarehouseSetupStep"
 import FirstProductStep from "@/src/features/onboarding/FirstProductStep"
 import { toast } from "@/components/ui/use-toast"
 
@@ -36,12 +36,6 @@ interface OnboardingStep {
   required: boolean
 }
 
-interface ShippingCompany {
-  id: string
-  name: string
-  logo: string
-  description: string
-}
 
 interface Certificate {
   id: string
@@ -56,7 +50,7 @@ interface CompletionStatus {
   business_profile: boolean
   factory_images: boolean
   certificates: boolean
-  shipping_configuration: boolean
+  warehouse_setup: boolean
   first_product: boolean
 }
 
@@ -73,7 +67,7 @@ export default function OnboardingPage() {
     business_profile: false,
     factory_images: false,
     certificates: false,
-    shipping_configuration: false,
+    warehouse_setup: false,
     first_product: false,
   })
 
@@ -98,15 +92,8 @@ export default function OnboardingPage() {
 
   const [factoryImages, setFactoryImages] = useState<File[]>([])
   const [certificates, setCertificates] = useState<Certificate[]>([])
-  const [selectedShipping, setSelectedShipping] = useState<string[]>([])
-  const [shippingConfig, setShippingConfig] = useState({
-    handlingTime: "",
-    shipsFrom: "",
-    incoterms: [] as string[],
-    configureLater: false,
-  })
-  const [carriers, setCarriers] = useState<ShippoCarrier[]>([])
-  const [loadingCarriers, setLoadingCarriers] = useState(false)
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [loadingWarehouses, setLoadingWarehouses] = useState(false)
 
   // Integrated API-backed state
   const [factoryImagesRemote, setFactoryImagesRemote] = useState<FactoryImage[]>([])
@@ -240,41 +227,32 @@ export default function OnboardingPage() {
         business_profile: authCompletionStatus.profile_completed,
         factory_images: false,
         certificates: authCompletionStatus.certificates_uploaded,
-        shipping_configuration: authCompletionStatus.shipping_configured,
+        warehouse_setup: authCompletionStatus.warehouse_setup || false,
         first_product: authCompletionStatus.first_product_added,
       })
     }
   }, [authCompletionStatus])
 
-  // Load carriers and previously saved selections
+  // Load warehouses
   useEffect(() => {
-    (async () => {
+    const loadWarehouses = async () => {
       try {
-        setLoadingCarriers(true)
-        const [list, saved] = await Promise.all([
-          shipmentsApi.listCarriers(),
-          shipmentsApi.getSavedCarrierIds(),
-        ])
-        console.log(list);
+        setLoadingWarehouses(true)
+        const response = await listWarehouses()
+        setWarehouses(response.data || [])
         
-        setCarriers(list)
-        if (Array.isArray(saved) && saved.length > 0) {
-          setSelectedShipping(saved)
+        // Mark warehouse_setup as complete if warehouses exist
+        if (response.data && response.data.length > 0) {
+          setCompletionStatus((prev) => ({ ...prev, warehouse_setup: true }))
         }
       } catch (e) {
-        console.error("Failed to load carriers", e)
+        console.error("Failed to load warehouses", e)
       } finally {
-        setLoadingCarriers(false)
+        setLoadingWarehouses(false)
       }
-    })()
+    }
+    loadWarehouses()
   }, [])
-
-  const shippingCompanies: ShippingCompany[] = carriers.map((c) => ({
-    id: c.object_id,
-    name: c.carrier_name || c.carrier,
-    logo: (c.carrier_images && (c.carrier_images["200"] || c.carrier_images["75"])) || "/placeholder.svg",
-    description: c.metadata || (c.carrier ? String(c.carrier).toUpperCase() : ""),
-  }))
 
   const steps: OnboardingStep[] = [
     {
@@ -299,10 +277,10 @@ export default function OnboardingPage() {
       required: false,
     },
     {
-      id: "shipping_configuration",
-      title: "Shipping Configuration",
-      description: "Configure your shipping preferences and partners.",
-      icon: <Truck className="h-6 w-6" />,
+      id: "warehouse_setup",
+      title: "Warehouse Setup",
+      description: "Add your warehouse locations for inventory management.",
+      icon: <Warehouse className="h-6 w-6" />,
       required: false,
     },
     {
@@ -520,36 +498,22 @@ export default function OnboardingPage() {
           // Optional step; inform user but allow continue
           toast({ title: "Certificates optional", description: "You can add certificates later from the dashboard." })
         }
-      } else if (stepId === "shipping_configuration") {
-        if (!shippingConfig.configureLater) {
-          if (selectedShipping.length === 0) {
-            toast({ title: "Select carriers", description: "Choose at least one carrier or select 'configure later'.", variant: "destructive" })
-            setIsLoading(false)
-            return
+      } else if (stepId === "warehouse_setup") {
+        // Warehouse setup is optional, but we'll check if at least one exists
+        if (warehouses.length === 0) {
+          toast({ 
+            title: "No warehouses", 
+            description: "You can add warehouses later from your dashboard.",
+          })
+        } else {
+          const current = authData.completionStatus || {
+            profile_completed: false,
+            warehouse_setup: false,
+            certificates_uploaded: false,
+            first_product_added: false,
           }
-          try {
-            await shipmentsApi.setupCarriers(selectedShipping)
-            toast({ title: "Carriers saved", description: "Your shipping carriers have been configured." })
-            const current = authData.completionStatus || {
-              profile_completed: false,
-              shipping_configured: false,
-              certificates_uploaded: false,
-              first_product_added: false,
-            }
-            if (!current.shipping_configured) {
-              updateAuthData({ completionStatus: { ...current, shipping_configured: true } })
-            }
-          } catch (e: any) {
-            let desc = "Failed to save carriers."
-            const data = e?.response?.data
-            if (data) {
-              if (typeof data === "string") desc = data
-              else if (typeof data?.message === "string") desc = data.message
-            } else if (e?.message) {
-              desc = e.message
-            }
-            toast({ title: "Save failed", description: desc, variant: "destructive" })
-            throw e
+          if (!current.warehouse_setup) {
+            updateAuthData({ completionStatus: { ...current, warehouse_setup: true } })
           }
         }
       }
@@ -628,8 +592,8 @@ export default function OnboardingPage() {
           businessProfile.primaryContact.phone &&
           businessProfile.primaryContact.email
         )
-      case "shipping_configuration":
-        return shippingConfig.configureLater || (selectedShipping.length > 0 && shippingConfig.handlingTime)
+      case "warehouse_setup":
+        return true // Always allow continuing, warehouses are optional
       default:
         return true
     }
@@ -723,15 +687,33 @@ export default function OnboardingPage() {
           />
         )
 
-      case "shipping_configuration":
+      case "warehouse_setup":
         return (
-          <ShippingConfigurationStep
-            shippingCompanies={shippingCompanies}
-            selectedShipping={selectedShipping}
-            setSelectedShipping={setSelectedShipping}
-            shippingConfig={shippingConfig}
-            setShippingConfig={setShippingConfig}
-            loading={loadingCarriers}
+          <WarehouseSetupStep
+            warehouses={warehouses}
+            onWarehouseAdded={async () => {
+              // Reload warehouses after adding
+              try {
+                setLoadingWarehouses(true)
+                const response = await listWarehouses()
+                setWarehouses(response.data || [])
+                
+                // Mark step as complete
+                setCompletionStatus((prev) => ({ ...prev, warehouse_setup: true }))
+              } catch (e) {
+                console.error("Failed to reload warehouses", e)
+              } finally {
+                setLoadingWarehouses(false)
+              }
+            }}
+            onSkip={() => {
+              // Skip warehouse setup
+              toast({ 
+                title: "Skipped", 
+                description: "You can add warehouses later from your dashboard." 
+              })
+            }}
+            loading={loadingWarehouses}
           />
         )
 
