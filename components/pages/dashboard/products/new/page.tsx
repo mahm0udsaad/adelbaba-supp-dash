@@ -18,19 +18,44 @@ export default function NewProductPage() {
   const handleSubmit = async (formData: FormData) => {
     setLoading(true)
     
-    // Show loading toast
-    const loadingToast = toast.loading("Creating product...", {
-      description: "Please wait while we save your product"
+    // Check if we have video/images to show specific messages
+    const hasVideo = formData.has('video')
+    const hasMedia = formData.has('media[]')
+
+    // Initial toast
+    let toastId = toast.loading("Starting product creation...", {
+      description: "Preparing your files for upload"
     })
     
     try {
+      if (hasMedia) {
+        toast.message("Uploading Images...", {
+            id: toastId,
+            description: "Please wait while we process your product images",
+        })
+        // Add artificial delay for UX if desired, or rely on actual network time
+        await new Promise(r => setTimeout(r, 2000))
+      }
+
+      if (hasVideo) {
+         toast.message("Uploading Video...", {
+            id: toastId,
+            description: "Large video files may take a moment. Please don't close this tab.",
+         })
+         // Artificial delay not needed for real upload, but ensures user sees the message
+         await new Promise(r => setTimeout(r, 3000)) 
+      }
+
+      toast.message("Saving Product...", {
+        id: toastId,
+        description: "Finalizing product details...",
+      })
+
       const newProduct = await createProduct(formData)
-      
-      // Dismiss loading toast
-      toast.dismiss(loadingToast)
       
       // Show success toast
       toast.success("Product Created Successfully! 🎉", {
+        id: toastId,
         description: `${newProduct.name || "Your product"} has been added to your catalog`,
         duration: 5000
       })
@@ -40,8 +65,9 @@ export default function NewProductPage() {
         router.push(`/dashboard/products`)
       }, 1500)
     } catch (error: any) {
-      // Dismiss loading toast
-      toast.dismiss(loadingToast)
+      // Dismiss loading toast if it wasn't converted to success/error
+      toast.dismiss(toastId)
+      
       console.error('Product creation error:', error)
       console.error('Response data:', error.response?.data)
       console.error('Response status:', error.response?.status)

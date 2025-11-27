@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/src/lib/authOptions"
+import { clearServerAuthCookies } from "@/lib/auth/server-auth"
 
 const GRAPHQL_URL = "https://api.adil-baba.com/graphql"
 
@@ -74,6 +75,9 @@ export async function POST(req: Request) {
       body: JSON.stringify({ query, variables: { startDate, endDate, limit } }),
       cache: "no-store",
     })
+    if (upstream.status === 401) {
+      clearServerAuthCookies()
+    }
     console.log("upstream", upstream)
     const text = await upstream.text()
     // Try parse JSON, otherwise pass text
@@ -120,5 +124,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ errors: [{ message: error?.message || "Proxy error" }] }, { status: 500 })
   }
 }
-
 

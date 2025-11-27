@@ -20,6 +20,7 @@ import { EnhancedSkuManager } from "./EnhancedSkuManager"
 import { ProductContent } from "./ProductContent"
 import { CategorySelector } from "./CategorySelector"
 import { QuickWarehouseModal } from "./QuickWarehouseModal"
+import { VideoUpload } from "./VideoUpload"
 import { Wand2, Loader2, AlertCircle, CheckCircle, FolderTree } from "lucide-react"
 import { toast } from "sonner"
 
@@ -301,6 +302,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
   // Complex fields state
   const [existingMedia, setExistingMedia] = useState<ProductDetail["media"]>([])
   const [newMediaFiles, setNewMediaFiles] = useState<File[]>([])
+  const [videoFile, setVideoFile] = useState<File | null>(null)
   const [mediaToRemove, setMediaToRemove] = useState<number[]>([])
   const [rangePrice, setRangePrice] = useState({ min_price: "", max_price: "" })
   const [tieredPrices, setTieredPrices] = useState<{ min_quantity: number; price: number }[]>([])
@@ -733,6 +735,11 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
         })
       }
 
+      // Add Video
+      if (videoFile) {
+        fd.append('video', videoFile)
+      }
+
       if (isEditMode) {
         if (mediaToRemove.length > 0) {
           mediaToRemove.forEach(id => fd.append('media[remove][]', String(id)))
@@ -1120,6 +1127,12 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
               )}
             </CardContent>
           </Card>
+
+          {/* Video Upload */}
+          <VideoUpload 
+            videoFile={videoFile} 
+            onVideoChange={setVideoFile} 
+          />
 
           {/* Pricing */}
           <Card>

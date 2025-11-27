@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useToast } from '@/hooks/use-toast'
-import { signOut } from 'next-auth/react'
+import { clearClientAuthState } from '@/lib/auth/client-auth'
 
 interface AuthErrorHandlerOptions {
   redirectOnUnauth?: boolean
@@ -23,9 +23,7 @@ export function useAuthErrorHandler(options: AuthErrorHandlerOptions = {}) {
         })
       }
       
-      if (redirectOnUnauth) {
-        signOut({ redirect: true, callbackUrl: '/login' })
-      }
+      clearClientAuthState({ redirectToLogin: redirectOnUnauth })
       
       return true
     }

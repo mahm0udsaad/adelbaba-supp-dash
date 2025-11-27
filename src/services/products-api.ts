@@ -24,7 +24,7 @@ export const listProducts = async (params: {
  */
 export const getProduct = async (id: number | string): Promise<ProductDetail> => {
   const response = await apiClient.get(`${BASE_URL}/${id}`);
-  return response.data;
+  return response.data.data;
 };
 
 /**
@@ -38,7 +38,7 @@ export const createProduct = async (productData: FormData): Promise<ProductDetai
       "Content-Type": "multipart/form-data",
     },
   });
-  return response.data;
+  return response.data.data;
 };
 
 /**
@@ -56,7 +56,7 @@ export const updateProduct = async (id: number | string, productData: FormData):
       "Content-Type": "multipart/form-data",
     },
   });
-  return response.data;
+  return response.data.data;
 };
 
 

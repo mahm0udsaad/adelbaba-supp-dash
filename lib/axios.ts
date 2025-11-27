@@ -1,9 +1,10 @@
-import axios, { AxiosInstance } from "axios"
+import axios, { AxiosInstance, AxiosError } from "axios"
+import { clearClientAuthState, isAuthErrorStatus } from "@/lib/auth/client-auth"
 
 // Centralized Axios client used across the app
 const apiClient: AxiosInstance = axios.create({
   baseURL: (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "") + "/api",
-  timeout: 15000,
+  timeout: 300000, // 5 minutes (for large video uploads)
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -44,45 +45,22 @@ apiClient.interceptors.request.use(async (config) => {
   return config
 })
 
-// Response interceptor to handle 401 errors and session expiry
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config
-
-    // Handle 401 unauthorized responses
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true
-
-      try {
-        if (typeof window !== 'undefined') {
-          const { getSession, signOut } = await import('next-auth/react')
-          const session = await getSession()
-          const refreshedToken =
-            (session as any)?.token ||
-            (session as any)?.accessToken ||
-            (session as any)?.user?.appToken
-
-          if (refreshedToken) {
-            originalRequest.headers = originalRequest.headers ?? {}
-            originalRequest.headers.Authorization = `Bearer ${refreshedToken}`
-            return apiClient(originalRequest)
-          }
-
-          await signOut({ redirect: true, callbackUrl: '/login' })
-        }
-      } catch (refreshError) {
-        // If anything fails, force sign out
-        if (typeof window !== 'undefined') {
-          const { signOut } = await import('next-auth/react')
-          await signOut({ redirect: true, callbackUrl: '/login' })
-        }
+function registerAuthFailureInterceptor(instance: AxiosInstance) {
+  instance.interceptors.response.use(
+    (response) => response,
+    async (error: AxiosError) => {
+      const status = error.response?.status
+      if (isAuthErrorStatus(status)) {
+        await clearClientAuthState().catch((cleanupError) => {
+          console.error("[Auth] Failed to clear client auth state", cleanupError)
+        })
       }
+      return Promise.reject(error)
     }
-    
-    return Promise.reject(error)
-  }
-)
+  )
+}
+
+registerAuthFailureInterceptor(apiClient)
+registerAuthFailureInterceptor(axios)
 
 export default apiClient
-

@@ -23,16 +23,28 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
       const files = Array.from(e.target.files)
       
       // Check file types
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime']
-      const invalidFiles = files.filter(f => !validTypes.includes(f.type))
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+      const invalidTypeFiles = files.filter(f => !validTypes.includes(f.type))
       
-      if (invalidFiles.length > 0) {
+      if (invalidTypeFiles.length > 0) {
         toast.error("Invalid File Type", {
-          description: `${invalidFiles.length} file(s) skipped. Only images and videos are allowed.`
+          description: `${invalidTypeFiles.length} file(s) skipped. Only images are allowed in this section.`
+        })
+      }
+
+      // Check file size (10MB limit)
+      const MAX_SIZE_MB = 10;
+      const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+      const validSizeFiles = files.filter(f => f.size <= MAX_SIZE_BYTES);
+      const invalidSizeFiles = files.filter(f => f.size > MAX_SIZE_BYTES);
+
+      if (invalidSizeFiles.length > 0) {
+        toast.error("File Too Large", {
+          description: `${invalidSizeFiles.length} file(s) skipped. Max file size is ${MAX_SIZE_MB}MB.`
         })
       }
       
-      const validFiles = files.filter(f => validTypes.includes(f.type))
+      const validFiles = validSizeFiles.filter(f => validTypes.includes(f.type))
       
       if (validFiles.length > 0) {
         // Append new files to existing files instead of replacing
@@ -63,7 +75,8 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
         <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center">
           <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
           <p className="mt-4 text-muted-foreground">{t.dragAndDropOrClick}</p>
-          <Input id="file-upload" type="file" accept="image/*,video/*" multiple className="sr-only" onChange={handleFileChange} />
+          <p className="text-xs text-muted-foreground mt-2">Max file size: 2MB per image</p>
+          <Input id="file-upload" type="file" accept="image/*" multiple className="sr-only" onChange={handleFileChange} />
           <Button  type="button" onClick={handleBrowseClick} className="mt-2 inline-block bg-primary text-primary-foreground px-4 py-2 rounded-md cursor-pointer">
             {t.browseFiles}
           </Button>
