@@ -7,33 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Plus, X } from "lucide-react"
 import { useI18n } from "@/lib/i18n/context"
-
-interface GeneralInfo {
-  name: string
-  material: string
-  [key: string]: string
-}
-
-interface Specification {
-  name: string
-  value: string
-}
-
-interface ShippingMethod {
-  method: string
-  time: string
-  cost: string
-}
-
-interface ProductContentData {
-  general: GeneralInfo
-  specifications: Specification[]
-  shipping: ShippingMethod[]
-}
+import type { ProductContentBlock } from "@/src/services/types/product-types"
 
 interface ProductContentProps {
-  content: ProductContentData | null
-  setContent: (content: ProductContentData | null) => void
+  content: ProductContentBlock | null
+  setContent: (content: ProductContentBlock | null) => void
 }
 
 export function ProductContent({ content, setContent }: ProductContentProps) {

@@ -3,7 +3,7 @@ import "./globals.css"
 import Providers from "./providers"
 
 export const metadata = {
-  title: "Adilbaba Dashboard",
+  title: "Adilbaba Supplier Dashboard",
   description: "Supplier dashboard",
 }
 

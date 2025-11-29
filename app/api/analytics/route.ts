@@ -65,6 +65,7 @@ export async function POST(req: Request) {
       "Content-Type": "application/json",
       Accept: "application/json",
       "X-Requested-With": "AdelbabaDashboard",
+      "X-Country": "EG",
     }
     if (token) headers.Authorization = `Bearer ${token}`
     if (companyId) headers["X-Company-ID"] = String(companyId)

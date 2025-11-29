@@ -22,7 +22,7 @@ interface Warehouse {
   name: string;
 }
 
-interface SkuAttribute {
+export interface SkuAttribute {
   type: "select" | "color" | "image";
   variation_value_id: number;
   hex_color?: string;
@@ -50,7 +50,8 @@ interface SkuInventoryWarehouse {
   track_inventory: boolean;
 }
 
-interface EnhancedSku {
+export interface EnhancedSku {
+  id?: number;
   code: string;
   price: number;
   package_details: SkuPackageDetails;
@@ -71,6 +72,7 @@ interface EnhancedSkuManagerProps {
   setSkus: (skus: EnhancedSku[]) => void;
   warehouses?: Warehouse[];
   variationValues?: VariationValue[];
+  onRemoveSku?: (sku: EnhancedSku, index: number) => void;
 }
 
 // Helper to generate cartesian product for SKUs
@@ -90,7 +92,7 @@ function cartesian(args: any[][]): any[][] {
     return r;
 }
 
-export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationValues = [] }: EnhancedSkuManagerProps) {
+export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationValues = [], onRemoveSku }: EnhancedSkuManagerProps) {
   const { t } = useI18n();
   const [attributes, setAttributes] = useState<AttributeVariation[]>([]);
   const [expandedSkus, setExpandedSkus] = useState<Set<number>>(new Set());
@@ -191,6 +193,43 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
     }]);
   };
 
+  useEffect(() => {
+    if (!warehouses.length || !skus.length) return;
+    const allowedIds = new Set(warehouses.map(w => w.id));
+    setSkus(prev => {
+      let changed = false;
+      const updated = prev.map(sku => {
+        const currentWarehouses = (sku.inventory?.warehouses ?? []).filter(w => allowedIds.has(w.warehouse_id));
+        if (currentWarehouses.length !== (sku.inventory?.warehouses?.length ?? 0)) {
+          changed = true;
+        }
+        const existingIds = new Set(currentWarehouses.map(w => w.warehouse_id));
+        const additions = warehouses
+          .filter(w => !existingIds.has(w.id))
+          .map(w => ({
+            warehouse_id: w.id,
+            on_hand: 0,
+            reserved: 0,
+            reorder_point: 0,
+            restock_level: 0,
+            track_inventory: true,
+          }));
+        const nextWarehouses = [...currentWarehouses, ...additions];
+        if (!additions.length && currentWarehouses.length === (sku.inventory?.warehouses?.length ?? 0)) {
+          return sku;
+        }
+        changed = true;
+        return {
+          ...sku,
+          inventory: {
+            warehouses: nextWarehouses,
+          },
+        };
+      });
+      return changed ? updated : prev;
+    });
+  }, [warehouses.map(w => w.id).join('|'), skus.length, setSkus]);
+
   const removeAttribute = (index: number) => {
     setAttributes(attributes.filter((_, i) => i !== index));
   };
@@ -221,6 +260,16 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
   const updateSku = (skuIndex: number, field: 'price', value: number) => {
     const newSkus = [...skus];
     newSkus[skuIndex][field] = value;
+    setSkus(newSkus);
+  };
+
+  const handleRemoveSku = (skuIndex: number) => {
+    const sku = skus[skuIndex];
+    if (onRemoveSku) {
+      onRemoveSku(sku, skuIndex);
+      return;
+    }
+    const newSkus = skus.filter((_, idx) => idx !== skuIndex);
     setSkus(newSkus);
   };
 
@@ -364,6 +413,18 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
                           Stock: {sku.inventory.warehouses.reduce((sum, w) => sum + w.on_hand, 0)}
                         </div>
                       </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="ml-2 text-muted-foreground hover:text-destructive"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRemoveSku(skuIndex);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </CollapsibleTrigger>
                   

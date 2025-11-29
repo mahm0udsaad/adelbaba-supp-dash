@@ -8,7 +8,7 @@ async function exchangeWithBackend(params: { provider: "google" | "facebook"; to
   const url = `${base}/api/v1/company/login/social`
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/json", "X-Country": "EG" },
     body: JSON.stringify({ provider: params.provider, token: params.token }),
   })
   if (!res.ok) {
@@ -37,7 +37,7 @@ async function loginWithBackend(params: { email: string; password: string }) {
   const url = `${base}/api/v1/company/login`
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/json", "X-Country": "EG" },
     body: JSON.stringify({ email: params.email, password: params.password }),
   })
   if (!res.ok) {

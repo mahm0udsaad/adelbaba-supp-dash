@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,13 +16,14 @@ import { ProductDetail } from "@/src/services/types/product-types"
 import { listWarehouses, Warehouse } from "@/src/services/inventory-api"
 import { MediaUpload } from "./MediaUpload"
 import { PricingTiered } from "./PricingTiered"
-import { EnhancedSkuManager } from "./EnhancedSkuManager"
+import { EnhancedSkuManager, type EnhancedSku } from "./EnhancedSkuManager"
 import { ProductContent } from "./ProductContent"
 import { CategorySelector } from "./CategorySelector"
 import { QuickWarehouseModal } from "./QuickWarehouseModal"
 import { VideoUpload } from "./VideoUpload"
 import { Wand2, Loader2, AlertCircle, CheckCircle, FolderTree } from "lucide-react"
 import { toast } from "sonner"
+import type { ProductContentBlock, ProductSku } from "@/src/services/types/product-types"
 
 const PricingRange = ({ range, setRange, errors }: { 
   range: { min_price: string; max_price: string }; 
@@ -79,6 +80,88 @@ interface ProductFormProps {
   onSubmit: (formData: FormData) => Promise<any>
   loading: boolean
 }
+
+const createEmptyContent = (): ProductContentBlock => ({
+  general: { name: "", material: "" },
+  specifications: [{ name: "", value: "" }],
+  shipping: [{ method: "", time: "", cost: "" }],
+});
+
+const normalizeContent = (incoming?: ProductContentBlock | string | null): ProductContentBlock => {
+  let parsed: ProductContentBlock | null = null
+  if (typeof incoming === "string") {
+    try {
+      parsed = JSON.parse(incoming)
+    } catch {
+      parsed = null
+    }
+  } else {
+    parsed = incoming ?? null
+  }
+
+  if (!parsed) {
+    return createEmptyContent();
+  }
+
+  const base = createEmptyContent();
+
+  return {
+    general: { ...base.general, ...(parsed.general || {}) },
+    specifications: (parsed.specifications && parsed.specifications.length > 0
+      ? parsed.specifications
+      : base.specifications
+    ).map(spec => ({
+      name: spec?.name ?? "",
+      value: spec?.value ?? "",
+    })),
+    shipping: (parsed.shipping && parsed.shipping.length > 0
+      ? parsed.shipping
+      : base.shipping
+    ).map(method => ({
+      method: method?.method ?? "",
+      time: method?.time ?? "",
+      cost: method?.cost ?? "",
+    })),
+  };
+};
+
+const normalizeSkuFromApi = (sku: ProductSku): EnhancedSku => {
+  const packageDetails = {
+    mass_unit: sku.package_details?.mass_unit ?? "kg",
+    weight: Number(sku.package_details?.weight ?? 0),
+    distance_unit: sku.package_details?.distance_unit ?? "cm",
+    height: Number(sku.package_details?.height ?? 0),
+    length: Number(sku.package_details?.length ?? 0),
+    width: Number(sku.package_details?.width ?? 0),
+  };
+
+  const inventoryWarehouses = typeof sku.inventory === "object" && sku.inventory?.warehouses?.length
+    ? sku.inventory.warehouses.map(w => ({
+        warehouse_id: w.warehouse_id,
+        on_hand: Number(w.on_hand ?? 0),
+        reserved: Number(w.reserved ?? 0),
+        reorder_point: Number(w.reorder_point ?? 0),
+        restock_level: Number(w.restock_level ?? 0),
+        track_inventory: Boolean(w.track_inventory),
+      }))
+    : null
+
+  return {
+    id: sku.id,
+    code: sku.code,
+    price: typeof sku.price === "string" ? parseFloat(sku.price) : sku.price ?? 0,
+    package_details: packageDetails,
+    inventory: {
+      warehouses: inventoryWarehouses ?? []
+    },
+    attributes: (sku.attributes || []).map(attr => ({
+      type: attr.type,
+      variation_value_id: (attr as any).variation_value_id ?? undefined,
+      hex_color: attr.hex_color ?? attr.hexColor,
+      image: (attr as any).image,
+    })),
+  };
+};
 
 // Development sample data
 const SAMPLE_DATA = {
@@ -303,11 +386,13 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
   const [existingMedia, setExistingMedia] = useState<ProductDetail["media"]>([])
   const [newMediaFiles, setNewMediaFiles] = useState<File[]>([])
   const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [existingVideoUrl, setExistingVideoUrl] = useState<string | null>(null)
   const [mediaToRemove, setMediaToRemove] = useState<number[]>([])
   const [rangePrice, setRangePrice] = useState({ min_price: "", max_price: "" })
   const [tieredPrices, setTieredPrices] = useState<{ min_quantity: number; price: number }[]>([])
-  const [enhancedSkus, setEnhancedSkus] = useState<any[]>([])
-  const [content, setContent] = useState<any>(null)
+  const [enhancedSkus, setEnhancedSkus] = useState<EnhancedSku[]>([])
+  const [removedSkuIds, setRemovedSkuIds] = useState<number[]>([])
+  const [content, setContent] = useState<ProductContentBlock | null>(createEmptyContent())
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [selectedWarehouseIds, setSelectedWarehouseIds] = useState<number[]>([])
   const [loadingWarehouses, setLoadingWarehouses] = useState<boolean>(false)
@@ -362,7 +447,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
         setRangePrice(draft.rangePrice || { min_price: "", max_price: "" })
         setTieredPrices(draft.tieredPrices || [])
         setEnhancedSkus(draft.enhancedSkus || [])
-        setContent(draft.content || null)
+        setContent(normalizeContent(draft.content))
         setErrors({})
         toast.success("Draft Loaded", {
           description: "Your saved draft has been restored"
@@ -402,7 +487,8 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
     setRangePrice(SAMPLE_DATA.rangePrice)
     setTieredPrices(SAMPLE_DATA.tieredPrices)
     setEnhancedSkus(SAMPLE_DATA.enhancedSkus)
-    setContent(SAMPLE_DATA.content)
+    setContent(normalizeContent(SAMPLE_DATA.content as ProductContentBlock))
+    setExistingVideoUrl(null)
     setErrors({}) // Clear any validation errors
   }
 
@@ -436,11 +522,14 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
       newErrors.pricing = t.atLeastOneSkuRequired
     }
 
-    // Check if warehouses are available and selected (required for all price types)
-    if (warehouses.length === 0) {
-      newErrors.warehouses = t.atLeastOneWarehouseRequired
-    } else if (selectedWarehouseIds.length === 0) {
-      newErrors.selectedWarehouses = t.pleaseSelectWarehouse
+    // Warehouses are required for non-SKU pricing
+    const requiresWarehouseSelection = priceType !== "sku"
+    if (requiresWarehouseSelection) {
+      if (warehouses.length === 0) {
+        newErrors.warehouses = t.atLeastOneWarehouseRequired
+      } else if (selectedWarehouseIds.length === 0) {
+        newErrors.selectedWarehouses = t.pleaseSelectWarehouse
+      }
     }
 
     // Validate SKUs if they exist
@@ -484,19 +573,44 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
       setCategoryId(String(initialData.category.id))
       setCategoryName(initialData.category.name || "")
       setMoq(initialData.moq)
-      // setProductUnitId(initialData.product_unit_id)
       setIsActive(initialData.is_active)
       setPriceType(initialData.price_type)
       setExistingMedia(initialData.media || [])
-      if (initialData.price_type === 'range' && initialData.rangePrices) {
+      setMediaToRemove([])
+      setNewMediaFiles([])
+      setRemovedSkuIds([])
+      setContent(normalizeContent(initialData.content))
+      setExistingVideoUrl(initialData.video || null)
+
+      if (initialData.price_type === "range" && initialData.rangePrices) {
         setRangePrice({ min_price: initialData.rangePrices.minPrice, max_price: initialData.rangePrices.maxPrice })
       }
-      if (initialData.price_type === 'tiered') {
+      if (initialData.price_type === "tiered") {
         setTieredPrices(initialData.tieredPrices || [])
       }
-      if (initialData.price_type === 'sku') {
-        // Map backend skus to enhancedSkus shape if necessary
-        setEnhancedSkus((initialData.skus as any[]) || [])
+
+      if (initialData.skus) {
+        const normalizedSkus = (initialData.skus || []).map(normalizeSkuFromApi)
+        if (initialData.price_type === "sku") {
+          setEnhancedSkus(normalizedSkus)
+        } else {
+          setEnhancedSkus([])
+        }
+
+        const derivedWarehouseIds = Array.from(
+          new Set(
+            normalizedSkus.flatMap(sku =>
+              sku.inventory?.warehouses
+                ?.map(w => w.warehouse_id)
+                .filter((id): id is number => typeof id === "number" && id > 0) || []
+            )
+          )
+        )
+        if (derivedWarehouseIds.length > 0) {
+          setSelectedWarehouseIds(derivedWarehouseIds)
+        }
+      } else {
+        setEnhancedSkus([])
       }
     }
   }, [initialData])
@@ -509,7 +623,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
       const warehouseList = res.data || []
       setWarehouses(warehouseList)
       // Auto-select first warehouse if available and no warehouse is selected
-      if (warehouseList.length > 0 && selectedWarehouseIds.length === 0 && !isEditMode) {
+      if (warehouseList.length > 0 && selectedWarehouseIds.length === 0) {
         setSelectedWarehouseIds([warehouseList[0].id])
       }
     } catch (e) {
@@ -537,6 +651,13 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
     })
   }, [name, description, categoryId, newMediaFiles, existingMedia])
 
+  const handleRemoveSku = useCallback((sku: EnhancedSku, index: number) => {
+    if (sku?.id) {
+      setRemovedSkuIds(prev => (prev.includes(sku.id as number) ? prev : [...prev, sku.id as number]))
+    }
+    setEnhancedSkus(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault()
   
@@ -562,8 +683,9 @@ const handleSubmit = async (e: React.FormEvent) => {
     fd.append('product[is_active]', isActive ? '1' : '0')
     fd.append('product[category_id]', String(parseInt(categoryId)))
 
-    // Content handling (same as before)
-    // ... content code ...
+    if (content) {
+      fd.append('product[content]', JSON.stringify(content))
+    }
 
     // Pricing fields
     if (priceType === 'range') {
@@ -578,84 +700,101 @@ const handleSubmit = async (e: React.FormEvent) => {
       })
     }
 
-    // SKUs: CORRECTED TO MATCH API SPEC
-    const appendSkuToFormData = (sku: any, skuIndex: number) => {
-      // Required fields
-      if (sku.code) fd.append(`skus[${skuIndex}][code]`, String(sku.code))
-      if (typeof sku.price !== 'undefined') fd.append(`skus[${skuIndex}][price]`, String(sku.price))
-      
-      // Package details - API expects STRINGS not numbers
+    const ensureWarehouses = (sku: EnhancedSku) => {
+      if (sku.inventory?.warehouses && sku.inventory.warehouses.length > 0) {
+        return sku.inventory.warehouses
+      }
+      const fallbackIds = selectedWarehouseIds.length
+        ? selectedWarehouseIds
+        : (warehouses.length ? [warehouses[0].id] : [])
+      return fallbackIds.map(id => ({
+        warehouse_id: id,
+        on_hand: 0,
+        reserved: 0,
+        reorder_point: 5,
+        restock_level: 20,
+        track_inventory: true
+      }))
+    }
+
+    const appendSkuToFormData = (sku: EnhancedSku, skuIndex: number, mode: 'add' | 'modify') => {
+      const prefix = `skus[${mode}][${skuIndex}]`
+      if (mode === 'modify' && sku.id) {
+        fd.append(`${prefix}[id]`, String(sku.id))
+      }
+      fd.append(`${prefix}[code]`, sku.code || `SKU-${skuIndex}`)
+      fd.append(`${prefix}[price]`, String(sku.price ?? 0))
+
       if (sku.package_details) {
         const pd = sku.package_details
-        if (pd.mass_unit) fd.append(`skus[${skuIndex}][package_details][mass_unit]`, String(pd.mass_unit))
-        if (typeof pd.weight !== 'undefined') fd.append(`skus[${skuIndex}][package_details][weight]`, String(pd.weight)) // String!
-        if (pd.distance_unit) fd.append(`skus[${skuIndex}][package_details][distance_unit]`, String(pd.distance_unit))
-        if (typeof pd.height !== 'undefined') fd.append(`skus[${skuIndex}][package_details][height]`, String(pd.height)) // String!
-        if (typeof pd.length !== 'undefined') fd.append(`skus[${skuIndex}][package_details][length]`, String(pd.length)) // String!
-        if (typeof pd.width !== 'undefined') fd.append(`skus[${skuIndex}][package_details][width]`, String(pd.width)) // String!
+        if (pd.mass_unit) fd.append(`${prefix}[package_details][mass_unit]`, String(pd.mass_unit))
+        if (pd.weight !== undefined) fd.append(`${prefix}[package_details][weight]`, String(pd.weight))
+        if (pd.distance_unit) fd.append(`${prefix}[package_details][distance_unit]`, String(pd.distance_unit))
+        if (pd.height !== undefined) fd.append(`${prefix}[package_details][height]`, String(pd.height))
+        if (pd.length !== undefined) fd.append(`${prefix}[package_details][length]`, String(pd.length))
+        if (pd.width !== undefined) fd.append(`${prefix}[package_details][width]`, String(pd.width))
       }
-      
-      // Inventory by warehouses
-      if (sku.inventory?.warehouses) {
-        sku.inventory.warehouses.forEach((w: any, wIndex: number) => {
-          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][warehouse_id]`, String(w.warehouse_id))
-          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][on_hand]`, String(w.on_hand))
-          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reserved]`, String(w.reserved))
-          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reorder_point]`, String(w.reorder_point))
-          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][restock_level]`, String(w.restock_level))
-          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][track_inventory]`, w.track_inventory ? '1' : '0')
-        })
-      }
-      
-      // Attributes
-      if (sku.attributes && Array.isArray(sku.attributes) && sku.attributes.length > 0) {
-        sku.attributes.forEach((attr: any, attrIndex: number) => {
-          if (attr && attr.type) {
-            fd.append(`skus[${skuIndex}][attributes][${attrIndex}][type]`, String(attr.type))
-            
-            // Variation value ID is required
-            if (attr.variation_value_id) {
-              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][variation_value_id]`, String(attr.variation_value_id))
-            }
-            
-            // Color type: hex_color is required
-            if (attr.type === 'color' && attr.hex_color) {
-              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][hex_color]`, String(attr.hex_color))
-            }
-            
-            // Image type: image file is required
-            if (attr.type === 'image' && attr.image && attr.image instanceof File) {
-              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][image]`, attr.image)
-            }
+
+      const warehousesPayload = ensureWarehouses(sku)
+      warehousesPayload.forEach((w, wIndex) => {
+        if (typeof w.warehouse_id === 'number') {
+          fd.append(`${prefix}[inventory][warehouses][${wIndex}][warehouse_id]`, String(w.warehouse_id))
+          fd.append(`${prefix}[inventory][warehouses][${wIndex}][on_hand]`, String(w.on_hand ?? 0))
+          fd.append(`${prefix}[inventory][warehouses][${wIndex}][reserved]`, String(w.reserved ?? 0))
+          fd.append(`${prefix}[inventory][warehouses][${wIndex}][reorder_point]`, String(w.reorder_point ?? 0))
+          fd.append(`${prefix}[inventory][warehouses][${wIndex}][restock_level]`, String(w.restock_level ?? 0))
+          fd.append(`${prefix}[inventory][warehouses][${wIndex}][track_inventory]`, w.track_inventory ? '1' : '0')
+        }
+      })
+
+      if (sku.attributes && sku.attributes.length > 0) {
+        sku.attributes.forEach((attr, attrIndex) => {
+          fd.append(`${prefix}[attributes][${attrIndex}][type]`, String(attr.type))
+          if (attr.variation_value_id) {
+            fd.append(`${prefix}[attributes][${attrIndex}][variation_value_id]`, String(attr.variation_value_id))
+          }
+          if (attr.hex_color) {
+            fd.append(`${prefix}[attributes][${attrIndex}][hex_color]`, String(attr.hex_color))
+          }
+          if (attr.type === 'image' && attr.image instanceof File) {
+            fd.append(`${prefix}[attributes][${attrIndex}][image]`, attr.image)
           }
         })
       }
     }
 
-    // Process SKUs based on price type
-    if (priceType === 'sku' && enhancedSkus && enhancedSkus.length > 0) {
-      enhancedSkus.forEach((sku: any, skuIndex: number) => {
-        appendSkuToFormData(sku, skuIndex)
+    const skuAddEntries: EnhancedSku[] = []
+    const skuModifyEntries: EnhancedSku[] = []
+
+    if (priceType === 'sku') {
+      enhancedSkus.forEach(sku => {
+        if (sku.id) {
+          skuModifyEntries.push(sku)
+        } else {
+          skuAddEntries.push(sku)
+        }
       })
     } else {
-      // For range/tiered pricing, create a default SKU
+      const fallbackWarehouseIds = selectedWarehouseIds.length
+        ? selectedWarehouseIds
+        : (warehouses.length ? [warehouses[0].id] : [])
       const defaultPrice = priceType === 'range' 
         ? parseFloat(rangePrice.min_price || '0') 
-        : (tieredPrices.length > 0 ? tieredPrices[0].price : 0)
+        : (tieredPrices.length > 0 ? Number(tieredPrices[0].price) : 0)
 
-      const defaultSku = {
+      const defaultSku: EnhancedSku = {
         code: `SKU-${name.substring(0, 5).replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`,
         price: defaultPrice,
         package_details: {
           mass_unit: 'kg',
-          weight: 1,        // Will be converted to string
+          weight: 1,
           distance_unit: 'cm',
-          height: 10,       // Will be converted to string
-          length: 10,       // Will be converted to string
-          width: 10         // Will be converted to string
+          height: 10,
+          length: 10,
+          width: 10
         },
         inventory: {
-          warehouses: selectedWarehouseIds.map(warehouseId => ({
+          warehouses: fallbackWarehouseIds.map(warehouseId => ({
             warehouse_id: warehouseId,
             on_hand: 0,
             reserved: 0,
@@ -672,13 +811,20 @@ const handleSubmit = async (e: React.FormEvent) => {
         ]
       }
       
-      appendSkuToFormData(defaultSku, 0)
+      skuAddEntries.push(defaultSku)
+    }
+
+    skuAddEntries.forEach((sku, index) => appendSkuToFormData(sku, index, 'add'))
+    skuModifyEntries.forEach((sku, index) => appendSkuToFormData(sku, index, 'modify'))
+
+    if (removedSkuIds.length > 0) {
+      removedSkuIds.forEach(id => fd.append('skus[remove][]', String(id)))
     }
 
     // Media files
     if (newMediaFiles.length > 0) {
       newMediaFiles.forEach((file) => {
-        fd.append('media[]', file)
+        fd.append('media[add][]', file)
       })
     }
 
@@ -697,13 +843,6 @@ const handleSubmit = async (e: React.FormEvent) => {
       console.group('📦 FormData Summary:')
       console.log('Price Type:', priceType)
       console.log('SKU Count:', priceType === 'sku' ? enhancedSkus.length : 1)
-      
-      // Log a sample SKU structure
-      if (priceType === 'sku' && enhancedSkus.length > 0) {
-        console.log('Sample SKU:', enhancedSkus[0])
-      }
-      
-      // List all FormData keys for verification
       const keys = Array.from(fd.keys())
       console.log('FormData Keys:', keys.length)
       console.log('SKU-related keys:', keys.filter(k => k.startsWith('skus[')))
@@ -731,7 +870,14 @@ const handleSubmit = async (e: React.FormEvent) => {
     switch (priceType) {
       case "range": return <PricingRange range={rangePrice} setRange={setRangePrice} errors={errors} />
       case "tiered": return <PricingTiered tiers={tieredPrices} setTiers={setTieredPrices} />
-      case "sku": return <EnhancedSkuManager skus={enhancedSkus} setSkus={setEnhancedSkus} warehouses={selectedWarehouses} />
+      case "sku": return (
+        <EnhancedSkuManager
+          skus={enhancedSkus}
+          setSkus={setEnhancedSkus}
+          warehouses={selectedWarehouses}
+          onRemoveSku={handleRemoveSku}
+        />
+      )
       default: return null
     }
   }
@@ -1055,7 +1201,8 @@ const handleSubmit = async (e: React.FormEvent) => {
           {/* Video Upload */}
           <VideoUpload 
             videoFile={videoFile} 
-            onVideoChange={setVideoFile} 
+            onVideoChange={setVideoFile}
+            existingVideoUrl={existingVideoUrl}
           />
 
           {/* Pricing */}

@@ -10,10 +10,12 @@ import { toast } from 'sonner';
 interface VideoUploadProps {
   videoFile: File | null;
   onVideoChange: (file: File | null) => void;
+  existingVideoUrl?: string | null;
+  onExistingVideoClear?: () => void;
   maxSizeMB?: number;
 }
 
-export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: VideoUploadProps) {
+export function VideoUpload({ videoFile, onVideoChange, existingVideoUrl, onExistingVideoClear, maxSizeMB = 250 }: VideoUploadProps) {
   const { t } = useI18n();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,6 +41,7 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
       }
       
       onVideoChange(file);
+      onExistingVideoClear?.();
       
       toast.success(t.videoAdded, {
         description: `${file.name} ${t.videoReadyToUpload}`,
@@ -70,7 +73,7 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
         </p>
       </CardHeader>
       <CardContent>
-        {!videoFile ? (
+        {!videoFile && !existingVideoUrl ? (
           <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center hover:bg-muted/50 transition-colors">
             <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
             <p className="mt-4 text-muted-foreground">{t.dragDropVideo}</p>
@@ -91,7 +94,7 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
               {t.selectVideo}
             </Button>
           </div>
-        ) : (
+        ) : videoFile ? (
           <div className="relative border rounded-lg p-4 bg-muted/20">
             <div className="flex items-start gap-4">
               <div className="h-16 w-16 bg-background rounded-md flex items-center justify-center border shadow-sm">
@@ -116,6 +119,17 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
                 <X className="h-4 w-4" />
               </Button>
             </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-border overflow-hidden">
+              <video controls src={existingVideoUrl ?? undefined} className="w-full bg-black">
+                <track kind="captions" />
+              </video>
+            </div>
+            <Button type="button" variant="outline" onClick={handleBrowseClick}>
+              {t.selectVideo}
+            </Button>
           </div>
         )}
       </CardContent>

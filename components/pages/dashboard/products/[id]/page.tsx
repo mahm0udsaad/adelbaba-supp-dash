@@ -11,7 +11,7 @@ import Link from "next/link"
 import { useI18n } from "@/lib/i18n/context"
 import { useApiWithFallback } from "@/hooks/useApiWithFallback"
 import { getProduct, deleteProduct } from "@/src/services/products-api"
-import { ProductDetail } from "@/src/services/types/product-types"
+import type { ProductContentBlock, ProductDetail } from "@/src/services/types/product-types"
 import { DeleteConfirmationDialog } from "../components/DeleteConfirmationDialog"
 import { toast } from "@/components/ui/use-toast"
 
@@ -94,7 +94,15 @@ const SkuList = ({ skus }: { skus: ProductDetail["skus"] }) => {
             <span className="font-bold">{sku.code}</span>
             <span className="text-lg text-primary font-bold">${sku.price}</span>
           </div>
-          <div className="text-sm text-muted-foreground">{t.stock}: {sku.inventory}</div>
+          <div className="text-sm text-muted-foreground">
+            {t.stock}:{" "}
+            {typeof sku.inventory === "number"
+              ? sku.inventory
+              : sku.inventory?.warehouses?.reduce(
+                  (sum, warehouse) => sum + (Number(warehouse.on_hand) || 0),
+                  0
+                ) ?? 0}
+          </div>
           <div className="flex gap-2 mt-2">
             {sku.attributes.map((attr, i) => (
               <Badge key={i} variant="secondary">{attr.name}: {attr.value}</Badge>
@@ -107,6 +115,71 @@ const SkuList = ({ skus }: { skus: ProductDetail["skus"] }) => {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+const ProductContentDisplay = ({ content }: { content?: ProductContentBlock | null }) => {
+  const { t } = useI18n()
+  if (!content) {
+    return <p className="text-sm text-muted-foreground">{t.noAdditionalContent}</p>
+  }
+
+  const generalEntries = Object.entries(content.general || {}).filter(([, value]) => value)
+  const specificationEntries = (content.specifications || []).filter(spec => spec.name || spec.value)
+  const shippingEntries = (content.shipping || []).filter(method => method.method || method.time || method.cost)
+
+  const hasContent = generalEntries.length > 0 || specificationEntries.length > 0 || shippingEntries.length > 0
+  if (!hasContent) {
+    return <p className="text-sm text-muted-foreground">{t.noAdditionalContent}</p>
+  }
+
+  return (
+    <div className="space-y-6 text-sm">
+      {generalEntries.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t.generalInfo}</p>
+          <div className="rounded-lg border p-3 space-y-2">
+            {generalEntries.map(([key, value]) => (
+              <div key={key} className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}</span>
+                <span className="font-semibold text-foreground text-right">{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {specificationEntries.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t.specifications}</p>
+          <ul className="space-y-2 rounded-lg border p-3">
+            {specificationEntries.map((spec, index) => (
+              <li key={`${spec.name}-${index}`} className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">{spec.name}</span>
+                <span className="font-medium text-foreground text-right">{spec.value}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {shippingEntries.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t.shippingMethods}</p>
+          <div className="grid gap-3 md:grid-cols-2">
+            {shippingEntries.map((shipping, index) => (
+              <div key={`${shipping.method}-${index}`} className="rounded-lg border p-4 space-y-2">
+                <div className="flex items-center justify-between text-foreground font-semibold">
+                  <span>{shipping.method || t.shippingMethod}</span>
+                  <span>{shipping.cost}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">{shipping.time}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -269,13 +342,7 @@ export default function ProductDetailPage() {
             <Card>
               <CardHeader><CardTitle>{t.productContent}</CardTitle></CardHeader>
               <CardContent>
-                {product.content ? (
-                  <div className="space-y-2 text-sm text-muted-foreground whitespace-pre-line">
-                    {product.content}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{t.noAdditionalContent}</p>
-                )}
+                <ProductContentDisplay content={product.content} />
               </CardContent>
             </Card>
 

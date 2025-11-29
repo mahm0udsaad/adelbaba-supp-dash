@@ -8,6 +8,7 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
+    "X-Country": "EG",
   },
   withCredentials: false,
 })
@@ -15,6 +16,10 @@ const apiClient: AxiosInstance = axios.create({
 // Attach Authorization header from NextAuth session token if available
 apiClient.interceptors.request.use(async (config) => {
   try {
+    // Ensure X-Country header is always present
+    config.headers = config.headers ?? {}
+    config.headers["X-Country"] = "EG"
+    
     if (typeof window !== "undefined") {
       const { getSession } = await import("next-auth/react")
       const session = await getSession()
@@ -35,7 +40,6 @@ apiClient.interceptors.request.use(async (config) => {
           }
         })()
       if (token) {
-        config.headers = config.headers ?? {}
         config.headers.Authorization = `Bearer ${token}`
       }
     }
