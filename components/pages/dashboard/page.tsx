@@ -1,6 +1,19 @@
 "use client"
 
-import { useMemo, useState } from "react"
+/**
+ * Dashboard Overview Page - Optimized for Performance
+ * 
+ * This is a temporary overview implementation that aggregates data from multiple API endpoints
+ * (Products, Orders, RFQs) until the backend creates a dedicated overview/dashboard endpoint.
+ * 
+ * Optimizations:
+ * - Memoized callbacks to prevent unnecessary re-fetches
+ * - Stabilized data dependencies using lengths/primitives where possible
+ * - Extracted utility functions outside component
+ * - Memoized expensive calculations
+ */
+
+import { useCallback, useMemo } from "react"
 import { useI18n } from "@/lib/i18n/context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,12 +28,14 @@ import {
   MessageSquare,
   Clock,
   CheckCircle,
-  Plus,
-  PlusIcon,
   PlusSquare,
 } from "lucide-react"
 import Link from "next/link"
-import { useMockData } from "@/lib/mock-data-context"
+import { useApiWithFallback } from "@/hooks/useApiWithFallback"
+import { listProducts } from "@/src/services/products-api"
+import { listOrders, OrderListItem } from "@/src/services/orders-api"
+import { listMarketRFQs, RFQListItem } from "@/src/services/rfq-api"
+import { ProductListItem } from "@/src/services/types/product-types"
 
 interface DashboardStats {
   newRfqs: number
@@ -29,91 +44,110 @@ interface DashboardStats {
   monthlyRevenue: number
 }
 
-interface RecentRFQ {
-  id: string
-  title: string
-  buyerCompany: string
-  category: string
-  targetPrice: number
-  currency: string
-  expiresAt: string
-  status: string
+// Extract utility functions outside component to prevent recreating on each render
+const getTimeRemaining = (expiresAt: string | null | undefined, t: any) => {
+  if (!expiresAt) return t.expired || "Expired"
+  const now = new Date()
+  const expiry = new Date(expiresAt)
+  const diff = expiry.getTime() - now.getTime()
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
+
+  if (days < 0) return t.expired || "Expired"
+  if (days === 0) return t.expiresToday || "Expires today"
+  if (days === 1) return t.expiresTomorrow || "Expires tomorrow"
+  return (t.expiresInDays || "Expires in {days} days").replace("{days}", String(days))
 }
 
-interface RecentOrder {
-  id: string
-  buyerCompany: string
-  items: Array<{
-    productName: string
-    qty: number
-  }>
-  total: number
-  status: string
-  createdAt: string
+const formatCurrency = (amount: string | number, currency: string = 'USD') => {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num)
 }
+
+const calculateMonthlyRevenue = (orders: OrderListItem[]): number => {
+  const currentMonth = new Date().getMonth()
+  const currentYear = new Date().getFullYear()
+  
+  return orders
+    .filter((order) => {
+      const orderDate = new Date(order.created_at)
+      return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear
+    })
+    .reduce((sum, order) => sum + parseFloat(order.total_amount || '0'), 0)
+}
+
+const countActiveOrders = (orders: OrderListItem[]): number => {
+  const activeStatuses = ['pending', 'processing', 'shipped', 'in_escrow']
+  return orders.filter((o) => 
+    activeStatuses.includes(o.status?.toLowerCase() || '')
+  ).length
+}
+
+const productsFallback = () => Promise.resolve({ data: [] as ProductListItem[] })
+const ordersFallback = () =>
+  Promise.resolve({
+    data: [] as OrderListItem[],
+    meta: { total: 0 },
+    links: {},
+  })
+const rfqsFallback = () =>
+  Promise.resolve({
+    data: [] as RFQListItem[],
+    meta: { total: 0 },
+    links: undefined,
+  })
 
 export default function DashboardPage() {
-  const { t, isArabic } = useI18n()
-  const [stats, setStats] = useState<DashboardStats>({
-    newRfqs: 0,
-    activeOrders: 0,
-    totalProducts: 0,
-    monthlyRevenue: 0,
+  const { t } = useI18n()
+
+  // Memoized fetchers - these will never change
+  const productsFetcher = useCallback(() => listProducts({ page: 1 }), [])
+  const ordersFetcher = useCallback(() => listOrders({ page: 1 }), [])
+  const rfqsFetcher = useCallback(() => listMarketRFQs({ status: 'open', page: 1, per_page: 10 }), [])
+
+  // Fetch Products
+  const { data: productsData, loading: productsLoading } = useApiWithFallback({
+    fetcher: productsFetcher,
+    fallback: productsFallback,
   })
-  const [recentRFQs, setRecentRFQs] = useState<RecentRFQ[]>([])
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
-  const [loading, setLoading] = useState(false)
-  const { rfqs, orders, products, analytics } = useMockData()
 
-  
+  // Fetch Orders
+  const { data: ordersData, loading: ordersLoading } = useApiWithFallback({
+    fetcher: ordersFetcher,
+    fallback: ordersFallback,
+  })
 
-  const transformedRevenue = useMemo(() => {
-    const arr = Array.isArray(analytics) ? analytics : []
-    const revenue = arr.find((x: any) => x?.id === "revenue")?.data
-    return revenue?.current || revenue?.monthlyRevenue || 0
-  }, [analytics])
+  // Fetch RFQs
+  const { data: rfqsData, loading: rfqsLoading } = useApiWithFallback({
+    fetcher: rfqsFetcher,
+    fallback: rfqsFallback,
+  })
 
-  // Compute once from context
-  if (recentRFQs.length === 0 && Array.isArray(rfqs)) {
-    setRecentRFQs((rfqs as any[]).slice(0, 3) as RecentRFQ[])
-  }
-  if (recentOrders.length === 0 && Array.isArray(orders)) {
-    setRecentOrders((orders as any[]).slice(0, 2) as RecentOrder[])
-  }
-  const computedStats = useMemo(() => {
-    const rfqsData = Array.isArray(rfqs) ? rfqs : []
-    const ordersData = Array.isArray(orders) ? orders : []
-    const productsData = Array.isArray(products) ? products : []
+  const loading = productsLoading || ordersLoading || rfqsLoading
+
+  // Stabilize data arrays - only recreate when actual data changes
+  const products = useMemo(() => productsData?.data || [], [productsData?.data])
+  const orders = useMemo(() => ordersData?.data || [], [ordersData?.data])
+  const rfqs = useMemo(() => rfqsData?.data || [], [rfqsData?.data])
+  const rfqsTotal = rfqsData?.meta?.total || 0
+
+  // Calculate stats - now with stable dependencies
+  const stats = useMemo<DashboardStats>(() => {
     return {
-      newRfqs: rfqsData.filter((r: any) => r.status === "open").length,
-      activeOrders: ordersData.filter((o: any) => ["in_escrow", "shipped"].includes(o.status)).length,
-      totalProducts: productsData.length,
-      monthlyRevenue: transformedRevenue,
+      newRfqs: rfqsTotal || rfqs.length,
+      activeOrders: countActiveOrders(orders),
+      totalProducts: products.length,
+      monthlyRevenue: calculateMonthlyRevenue(orders),
     }
-  }, [rfqs, orders, products, transformedRevenue])
+  }, [products.length, orders, rfqs.length, rfqsTotal])
 
-  if (stats !== computedStats) {
-    setStats(computedStats)
-  }
-
-  const getTimeRemaining = (expiresAt: string) => {
-    const now = new Date()
-    const expiry = new Date(expiresAt)
-    const diff = expiry.getTime() - now.getTime()
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-
-    if (days < 0) return t.expired
-    if (days === 0) return t.expiresToday
-    if (days === 1) return t.expiresTomorrow
-    return t.expiresInDays.replace("{days}", String(days))
-  }
-
-  const getOrderItemsText = (items: any[]) => {
-    if (items.length === 1) {
-      return `${items[0].productName} x ${items[0].qty}`
-    }
-    return `${items[0].productName} x ${items[0].qty} +${items.length - 1} more`
-  }
+  // Get recent items - slice only when data changes
+  const recentRFQs = useMemo(() => rfqs.slice(0, 3), [rfqs])
+  const recentOrders = useMemo(() => orders.slice(0, 3), [orders])
 
   if (loading) {
     return (
@@ -150,51 +184,48 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.newRfqs}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+2.5%</span> from last month
+              {t.open || "Open"} {t.rfqs || "RFQs"}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t.activeOrdersHeader}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.activeOrdersHeader || "Active Orders"}</CardTitle>
             <ShoppingCart className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.activeOrders}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+12%</span> from last month
+              {t.pending || "Pending"} & {t.shipped || "Shipped"}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t.products}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.products || "Products"}</CardTitle>
             <Package className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalProducts}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+5</span> from last month
+              {t.totalProducts || "Total products"}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t.monthlyRevenue}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t.monthlyRevenue || "Monthly Revenue"}</CardTitle>
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.monthlyRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+18%</span> from last month
-            </p>
+            <div className="text-2xl font-bold">{formatCurrency(stats.monthlyRevenue)}</div>
+            <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
       </div>
-
 
       {/* Quick Actions */}
       <Card>
@@ -225,6 +256,7 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
       <div className="grid gap-6 md:grid-cols-2">
         {/* Recent RFQs */}
         <Card>
@@ -233,36 +265,40 @@ export default function DashboardPage() {
               <FileText className="h-5 w-5" />
               {t.recentRFQs}
             </CardTitle>
-            <CardDescription>
-              {t.rfqsNeedAttention}
-            </CardDescription>
+            <CardDescription>{t.rfqsNeedAttention}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {recentRFQs.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                {t.noRecentRFQs}
+                {t.noRecentRFQs || "No recent RFQs"}
               </div>
             ) : (
-              recentRFQs.map((rfq) => (
+              recentRFQs.map((rfq: RFQListItem) => (
                 <div key={rfq.id} className="flex items-start justify-between p-3 border rounded-lg">
-                  <div className="space-y-1">
-                    <h4 className="font-medium text-sm">{rfq.title}</h4>
-                    <p className="text-xs text-muted-foreground">{rfq.buyerCompany}</p>
-                    <div className="flex items-center gap-2 text-xs">
-                      <Badge variant="outline">{rfq.category}</Badge>
-                      <span className="text-primary font-medium">
-                        ${rfq.targetPrice}/{t.unit}
-                      </span>
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <h4 className="font-medium text-sm truncate">{rfq.title || "Untitled"}</h4>
+                    <p className="text-xs text-muted-foreground truncate">{rfq.buyer_company || t.unknown || "Unknown"}</p>
+                    <div className="flex items-center gap-2 text-xs flex-wrap">
+                      {rfq.category && (
+                        <Badge variant="outline" className="text-xs">{rfq.category}</Badge>
+                      )}
+                      {rfq.target_price && (
+                        <span className="text-primary font-medium">
+                          {formatCurrency(rfq.target_price, rfq.currency || 'USD')}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="text-right space-y-1">
+                  <div className="text-right space-y-1 ml-2 flex-shrink-0">
                     <Badge variant={rfq.status === "open" ? "default" : "secondary"}>
-                      {rfq.status === "open" ? t.open : t.quoted}
+                      {rfq.status === "open" ? (t.open || "Open") : (rfq.status || t.closed || "Closed")}
                     </Badge>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {getTimeRemaining(rfq.expiresAt)}
-                    </p>
+                    {rfq.expires_at && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
+                        <Clock className="h-3 w-3" />
+                        {getTimeRemaining(rfq.expires_at, t)}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))
@@ -270,7 +306,7 @@ export default function DashboardPage() {
             <Link href="/dashboard/rfq">
               <Button variant="outline" className="w-full bg-transparent">
                 <Eye className="h-4 w-4 mr-2" />
-                {t.viewAllRFQs}
+                {t.viewAllRFQs || "View All RFQs"}
               </Button>
             </Link>
           </CardContent>
@@ -288,28 +324,46 @@ export default function DashboardPage() {
           <CardContent className="space-y-4">
             {recentOrders.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                {t.noRecentOrders}
+                {t.noRecentOrders || "No recent orders"}
               </div>
             ) : (
-              recentOrders.map((order) => (
+              recentOrders.map((order: OrderListItem) => (
                 <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="space-y-1">
-                    <h4 className="font-medium text-sm">{order.buyerCompany}</h4>
-                    <p className="text-xs text-muted-foreground">{getOrderItemsText(order.items)}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <h4 className="font-medium text-sm truncate">
+                      {order.order_number || `#${order.id}`}
+                    </h4>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {order.user?.name || order.user?.email || t.unknown || "Unknown"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </p>
+                    {order.items_count > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {order.items_count} {order.items_count === 1 ? (t.item || "item") : (t.items || "items")}
+                      </p>
+                    )}
                   </div>
-                  <div className="text-right space-y-1">
-                    <p className="font-medium text-primary">${order.total.toLocaleString()}</p>
-                    <Badge variant={order.status === "shipped" ? "default" : "secondary"}>
-                      {order.status === "shipped" ? (
+                  <div className="text-right space-y-1 ml-2 flex-shrink-0">
+                    <p className="font-medium text-primary">{formatCurrency(order.total_amount)}</p>
+                    <Badge 
+                      variant={
+                        order.status?.toLowerCase() === "shipped" || order.status?.toLowerCase() === "completed" 
+                          ? "default" 
+                          : "secondary"
+                      }
+                      className="text-xs"
+                    >
+                      {order.status?.toLowerCase() === "shipped" || order.status?.toLowerCase() === "completed" ? (
                         <>
                           <CheckCircle className="h-3 w-3 mr-1" />
-                          {t.shipped}
+                          {t.shipped || "Shipped"}
                         </>
                       ) : (
                         <>
                           <Clock className="h-3 w-3 mr-1" />
-                          {t.inEscrow}
+                          {order.status || t.pending || "Pending"}
                         </>
                       )}
                     </Badge>
@@ -320,13 +374,12 @@ export default function DashboardPage() {
             <Link href="/dashboard/orders">
               <Button variant="outline" className="w-full bg-transparent">
                 <Eye className="h-4 w-4 mr-2" />
-                {isArabic ? "عرض جميع الطلبات" : "View All Orders"}
+                {t.viewAllOrders || "View All Orders"}
               </Button>
             </Link>
           </CardContent>
         </Card>
       </div>
-
     </div>
   )
 }

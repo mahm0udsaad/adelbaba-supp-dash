@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,12 @@ interface PricingTieredProps {
 
 export function PricingTiered({ tiers, setTiers }: PricingTieredProps) {
   const { t } = useI18n();
+
+  useEffect(() => {
+    if (tiers.length === 0) {
+        setTiers([{ min_quantity: 0, price: 0 }]);
+    }
+  }, []);
 
   const addTier = () => {
     setTiers([...tiers, { min_quantity: 0, price: 0 }]);

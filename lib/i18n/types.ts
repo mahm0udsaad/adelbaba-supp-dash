@@ -26,6 +26,7 @@ export interface TranslationKeys {
   edit: string
   delete: string
   view: string
+  operate: string
   back: string
   next: string
   previous: string
@@ -279,6 +280,13 @@ export interface TranslationKeys {
   productCreateFailed: string
   saving: string
   saveProduct: string
+  productLabel: string
+  productId: string
+  skuCount: string
+  shownPriceLabel: string
+  ratingLabel: string
+  createdAtLabel: string
+  updatedAtLabel: string
   readyToShip: string
   reviews: string
   skus: string
@@ -289,6 +297,7 @@ export interface TranslationKeys {
   noSkusAvailable: string
   productLoadFailed: string
   inventory: string
+  viewInventory: string
   productUpdated: string
   productUpdatedSuccess: string
   productUpdateFailed: string
@@ -310,6 +319,128 @@ export interface TranslationKeys {
   productDeleted: string
   productDeletedSuccess: string
   productDeleteFailed: string
+  attributeName: string
+  selectType: string
+  colorType: string
+  imageType: string
+  attributeValues: string
+  generatedSkus: string
+  skuCode: string
+  price: string
+  packageDetails: string
+  massUnit: string
+  weight: string
+  distanceUnit: string
+  height: string
+  length: string
+  width: string
+  attributes: string
+  trackInventory: string
+  onHand: string
+  reserved: string
+  reorderPoint: string
+  restockLevel: string
+  updateProductInfo: string
+  loadDraft: string
+  fillSampleData: string
+  selectWarehouses: string
+  chooseWarehouses: string
+  loadingWarehouses: string
+  noWarehousesFound: string
+  createWarehouseBefore: string
+  warehouseSelected: string
+  warehousesSelected: string
+  enterProductName: string
+  describeProduct: string
+  productContent: string
+  addDetailedSpecs: string
+  uploadProductImages: string
+  choosePricingStrategy: string
+  saveAndPublish: string
+  saveAsDraft: string
+  clearDraft: string
+  tipsForSuccess: string
+  highQualityImages: string
+  useClearPhotos: string
+  detailedDescription: string
+  includeKeyFeatures: string
+  competitivePricing: string
+  researchMarketPrices: string
+  accurateMOQ: string
+  setRealisticMOQ: string
+  invalidFileType: string
+  fileSkipped: string
+  fileTooLarge: string
+  maxFileSize: string
+  filesAdded: string
+  mediaFilesReady: string
+  maxFileSizePerImage: string
+  mediaMarkedForRemoval: string
+  fileWillBeDeleted: string
+  fileRemoved: string
+  generalInfo: string
+  addField: string
+  fieldName: string
+  fieldValue: string
+  specifications: string
+  addSpecification: string
+  specName: string
+  specValue: string
+  shippingMethods: string
+  addShippingMethod: string
+  shippingMethod: string
+  shippingTime: string
+  shippingCost: string
+  selectSubcategory: string
+  parentCategory: string
+  searchCategories: string
+  noCategoriesFound: string
+  noCategoriesAvailable: string
+  noSubcategories: string
+  productVideo: string
+  uploadProductVideo: string
+  dragDropVideo: string
+  supportedVideoFormats: string
+  selectVideo: string
+  videoWillBeUploaded: string
+  videoAdded: string
+  videoReadyToUpload: string
+  videoRemoved: string
+  noProductVideo: string
+  noAdditionalContent: string
+  invalidVideoFile: string
+  videoSizeMustBeLess: string
+  material: string
+  address: string
+  select: string
+  categorySelected: string
+  noCategoriesFoundToast: string
+  failedToLoadCategories: string
+  noSubcategoriesAvailable: string
+  failedToLoadSubcategories: string
+  contactSupportToAddCategories: string
+  couldNotFetchCategories: string
+  couldNotFetchSubcategories: string
+  thisIsALeafCategory: string
+  productNameRequired: string
+  descriptionRequired: string
+  categoryRequired: string
+  moqMustBeAtLeast: string
+  atLeastOneMediaRequired: string
+  minimumPriceRequired: string
+  maximumPriceRequired: string
+  maximumPriceMustBeGreater: string
+  atLeastOneTierRequired: string
+  atLeastOneSkuRequired: string
+  atLeastOneWarehouseRequired: string
+  pleaseSelectWarehouse: string
+  skuCodeRequired: string
+  skuInventoryRequired: string
+  skuAttributesRequired: string
+  invalidAttributeType: string
+  variationValueRequired: string
+  colorValueRequired: string
+  imageFileRequired: string
 
   // Analytics
   revenue: string

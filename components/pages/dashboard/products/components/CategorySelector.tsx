@@ -42,14 +42,14 @@ export function CategorySelector({ open, onOpenChange, onSelect, selectedCategor
       setParentCategories(response.data || [])
       
       if (response.data.length === 0) {
-        toast.info("No Categories Found", {
-          description: "Please contact support to add product categories"
+        toast.info(t.noCategoriesFoundToast, {
+          description: t.contactSupportToAddCategories
         })
       }
     } catch (error) {
       console.error('Failed to fetch categories:', error)
-      toast.error("Failed to Load Categories", {
-        description: "Could not fetch categories. Please try again."
+      toast.error(t.failedToLoadCategories, {
+        description: t.couldNotFetchCategories
       })
     } finally {
       setLoading(false)
@@ -62,15 +62,15 @@ export function CategorySelector({ open, onOpenChange, onSelect, selectedCategor
       const response = await listCategoryChildren(parentId)
       setChildCategories(response.data || [])
       if (response.data.length === 0) {
-        toast.info("No Subcategories Available", {
-          description: "This is a leaf category. Select it to continue.",
+        toast.info(t.noSubcategoriesAvailable, {
+          description: t.thisIsALeafCategory,
           duration: 3000
         })
       }
     } catch (error) {
       console.error('Failed to fetch child categories:', error)
-      toast.error("Failed to Load Subcategories", {
-        description: "Could not fetch subcategories. Please try again."
+      toast.error(t.failedToLoadSubcategories, {
+        description: t.couldNotFetchSubcategories
       })
     } finally {
       setLoading(false)
@@ -85,7 +85,7 @@ export function CategorySelector({ open, onOpenChange, onSelect, selectedCategor
 
   const handleChildClick = (category: Category) => {
     onSelect(String(category.id), category.name, selectedParent?.name)
-    toast.success("Category Selected", {
+    toast.success(t.categorySelected, {
       description: selectedParent?.name 
         ? `${selectedParent.name} → ${category.name}`
         : category.name,
@@ -102,7 +102,7 @@ export function CategorySelector({ open, onOpenChange, onSelect, selectedCategor
   const handleSelectParentOnly = () => {
     if (selectedParent) {
       onSelect(String(selectedParent.id), selectedParent.name)
-      toast.success("Category Selected", {
+      toast.success(t.categorySelected, {
         description: selectedParent.name,
         duration: 3000
       })
@@ -147,13 +147,13 @@ export function CategorySelector({ open, onOpenChange, onSelect, selectedCategor
             )}
             <span>
               {step === 'parent' 
-                ? t.selectCategory || "Select Category"
-                : "Select Subcategory"}
+                ? t.selectCategory
+                : t.selectSubcategory}
             </span>
           </DialogTitle>
           {step === 'child' && selectedParent && (
             <DialogDescription>
-              Parent Category: <strong>{selectedParent.name}</strong>
+              {t.parentCategory} <strong>{selectedParent.name}</strong>
             </DialogDescription>
           )}
         </DialogHeader>
@@ -163,7 +163,7 @@ export function CategorySelector({ open, onOpenChange, onSelect, selectedCategor
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search categories..."
+              placeholder={t.searchCategories}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -184,8 +184,8 @@ export function CategorySelector({ open, onOpenChange, onSelect, selectedCategor
                 {filteredCategories.length === 0 ? (
                   <div className="col-span-full text-center py-12 text-muted-foreground">
                     {searchQuery 
-                      ? "No categories found matching your search"
-                      : "No categories available"}
+                      ? t.noCategoriesFound
+                      : t.noCategoriesAvailable}
                   </div>
                 ) : (
                   filteredCategories.map((category) => (
@@ -233,13 +233,13 @@ export function CategorySelector({ open, onOpenChange, onSelect, selectedCategor
           {step === 'child' && childCategories.length === 0 && !loading && selectedParent && (
             <div className="border-t pt-4 space-y-2">
               <p className="text-sm text-muted-foreground text-center">
-                This category has no subcategories
+                {t.noSubcategories}
               </p>
               <Button
                 onClick={handleSelectParentOnly}
                 className="w-full"
               >
-                {`Select "${selectedParent.name}"`}
+                {`${t.select} "${selectedParent.name}"`}
               </Button>
             </div>
           )}

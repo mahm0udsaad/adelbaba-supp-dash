@@ -20,11 +20,12 @@ export default function EditProductPageImpl() {
   const [loading, setLoading] = useState(false)
 
   const fetcher = useCallback(() => getProduct(id), [id])
+  const fallback = useCallback(async () => null, [])
   const { data: product, loading: productLoading } = useApiWithFallback<ProductDetail | null>({
-      fetcher,
-      fallback: async () => null, // Let the form handle the null case
-      deps: [id]
-  });
+    fetcher,
+    fallback, // Let the form handle the null case
+    deps: [id],
+  })
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true)

@@ -42,8 +42,18 @@ export function ProductContent({ content, setContent }: ProductContentProps) {
 
   // Sync hasContent with incoming content changes (e.g., Fill Sample Data)
   useEffect(() => {
-    setHasContent(!!content)
-  }, [content])
+    if (content) {
+      setHasContent(true)
+    } else {
+        // Initialize with default fields if content is null
+        setHasContent(true)
+        setContent({
+            general: { name: "", material: "" },
+            specifications: [{ name: "", value: "" }],
+            shipping: [{ method: "", time: "", cost: "" }]
+        })
+    }
+  }, [content]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize with empty content if enabling
   const enableContent = () => {
@@ -61,24 +71,11 @@ export function ProductContent({ content, setContent }: ProductContentProps) {
   }
 
   if (!hasContent) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>{t.productContent || "Product Content"}</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={enableContent}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t.addContent || "Add Content"}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            {t.productContentDescription || "Add detailed product specifications, general information, and shipping methods."}
-          </p>
-        </CardContent>
-      </Card>
-    )
+    // This state should essentially be unreachable now with auto-initialization, 
+    // but kept for safety/logic consistency or if setHasContent(false) is called explicitly.
+    // However, the requirement is to show inputs ready to be filled.
+    // We will render the form even if content is theoretically null (which the effect above prevents mostly).
+    return null; 
   }
 
   const updateGeneral = (key: string, value: string) => {
@@ -186,10 +183,10 @@ export function ProductContent({ content, setContent }: ProductContentProps) {
         {/* General Information */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">{t.generalInfo || "General Information"}</Label>
+            <Label className="text-sm font-medium">{t.generalInfo}</Label>
             <Button type="button" variant="outline" size="sm" onClick={addGeneralField}>
               <Plus className="h-4 w-4 mr-2" />
-              {t.addField || "Add Field"}
+              {t.addField}
             </Button>
           </div>
           <div className="space-y-3">
@@ -197,14 +194,14 @@ export function ProductContent({ content, setContent }: ProductContentProps) {
               <div key={key} className="grid grid-cols-3 gap-2 items-center">
                 {(key === 'name' || key === 'material') ? (
                   <Input
-                    placeholder={t.fieldName || "Field Name"}
-                    value={key === 'name' ? (t.name || 'Name') : (t.material || 'Material')}
+                    placeholder={t.fieldName}
+                    value={key === 'name' ? t.name : t.material}
                     readOnly
                     disabled
                   />
                 ) : (
                   <Input
-                    placeholder={t.fieldName || "Field Name"}
+                    placeholder={t.fieldName}
                     defaultValue={key.startsWith('field_') ? '' : key}
                     onBlur={(e) => {
                       const newValue = e.target.value.trim()
@@ -218,7 +215,7 @@ export function ProductContent({ content, setContent }: ProductContentProps) {
                   />
                 )}
                 <Input
-                  placeholder={t.fieldValue || "Field Value"}
+                  placeholder={t.fieldValue}
                   value={value}
                   onChange={(e) => updateGeneral(key, e.target.value)}
                 />
@@ -240,22 +237,22 @@ export function ProductContent({ content, setContent }: ProductContentProps) {
         {/* Specifications */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">{t.specifications || "Specifications"}</Label>
+            <Label className="text-sm font-medium">{t.specifications}</Label>
             <Button type="button" variant="outline" size="sm" onClick={addSpecification}>
               <Plus className="h-4 w-4 mr-2" />
-              {t.addSpecification || "Add Specification"}
+              {t.addSpecification}
             </Button>
           </div>
           <div className="space-y-3">
             {content?.specifications.map((spec, index) => (
               <div key={index} className="grid grid-cols-3 gap-2 items-center">
                 <Input
-                  placeholder={t.specName || "Specification Name"}
+                  placeholder={t.specName}
                   value={spec.name}
                   onChange={(e) => updateSpecification(index, 'name', e.target.value)}
                 />
                 <Input
-                  placeholder={t.specValue || "Specification Value"}
+                  placeholder={t.specValue}
                   value={spec.value}
                   onChange={(e) => updateSpecification(index, 'value', e.target.value)}
                 />
@@ -277,27 +274,27 @@ export function ProductContent({ content, setContent }: ProductContentProps) {
         {/* Shipping Methods */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">{t.shippingMethods || "Shipping Methods"}</Label>
+            <Label className="text-sm font-medium">{t.shippingMethods}</Label>
             <Button type="button" variant="outline" size="sm" onClick={addShipping}>
               <Plus className="h-4 w-4 mr-2" />
-              {t.addShippingMethod || "Add Shipping Method"}
+              {t.addShippingMethod}
             </Button>
           </div>
           <div className="space-y-3">
             {content?.shipping.map((shipping, index) => (
               <div key={index} className="grid grid-cols-4 gap-2 items-center">
                 <Input
-                  placeholder={t.shippingMethod || "Method"}
+                  placeholder={t.shippingMethod}
                   value={shipping.method}
                   onChange={(e) => updateShipping(index, 'method', e.target.value)}
                 />
                 <Input
-                  placeholder={t.shippingTime || "Time"}
+                  placeholder={t.shippingTime}
                   value={shipping.time}
                   onChange={(e) => updateShipping(index, 'time', e.target.value)}
                 />
                 <Input
-                  placeholder={t.shippingCost || "Cost"}
+                  placeholder={t.shippingCost}
                   value={shipping.cost}
                   onChange={(e) => updateShipping(index, 'cost', e.target.value)}
                 />

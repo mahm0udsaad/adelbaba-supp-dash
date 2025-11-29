@@ -22,8 +22,8 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
       
       // Check file type
       if (!file.type.startsWith('video/')) {
-        toast.error("Invalid File Type", {
-          description: "Please select a valid video file."
+        toast.error(t.invalidFileType, {
+          description: t.invalidVideoFile
         });
         e.target.value = '';
         return;
@@ -31,8 +31,8 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
 
       // Check file size (250MB limit)
       if (file.size > maxSizeMB * 1024 * 1024) {
-        toast.error("File Too Large", {
-          description: `Video size must be less than ${maxSizeMB}MB.`
+        toast.error(t.fileTooLarge, {
+          description: t.videoSizeMustBeLess.replace('{maxSizeMB}', String(maxSizeMB))
         });
         e.target.value = '';
         return;
@@ -40,8 +40,8 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
       
       onVideoChange(file);
       
-      toast.success("Video added", {
-        description: `${file.name} ready to upload`,
+      toast.success(t.videoAdded, {
+        description: `${file.name} ${t.videoReadyToUpload}`,
       });
       
       // Reset input value to allow re-selecting the same file if needed (though we handle state externally)
@@ -55,7 +55,7 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
 
   const handleRemove = () => {
     onVideoChange(null);
-    toast.info("Video removed");
+    toast.info(t.videoRemoved);
   };
 
   return (
@@ -63,18 +63,18 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
       <CardHeader>
         <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-sm font-medium">🎥</div>
-            <CardTitle className="text-lg">Product Video</CardTitle>
+            <CardTitle className="text-lg">{t.productVideo}</CardTitle>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Upload a product video (Max {maxSizeMB}MB). This helps customers understand your product better.
+          {t.uploadProductVideo.replace('{maxSizeMB}', String(maxSizeMB))}
         </p>
       </CardHeader>
       <CardContent>
         {!videoFile ? (
           <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center hover:bg-muted/50 transition-colors">
             <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 text-muted-foreground">Drag and drop or click to upload video</p>
-            <p className="text-xs text-muted-foreground mt-2">Supported formats: MP4, MOV, WebM</p>
+            <p className="mt-4 text-muted-foreground">{t.dragDropVideo}</p>
+            <p className="text-xs text-muted-foreground mt-2">{t.supportedVideoFormats}</p>
             <Input 
               id="video-upload" 
               type="file" 
@@ -88,7 +88,7 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
               variant="outline"
               className="mt-4"
             >
-              Select Video
+              {t.selectVideo}
             </Button>
           </div>
         ) : (
@@ -104,7 +104,7 @@ export function VideoUpload({ videoFile, onVideoChange, maxSizeMB = 250 }: Video
                 </p>
                 <div className="flex items-center gap-2 mt-2 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded w-fit">
                     <AlertCircle className="h-3 w-3" />
-                    Video will be uploaded when you save
+                    {t.videoWillBeUploaded}
                 </div>
               </div>
               <Button 

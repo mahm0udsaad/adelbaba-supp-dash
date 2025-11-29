@@ -10,6 +10,9 @@ export type ProductListItem = {
   name: string;
   image: string; // Main image URL
   description: string;
+  content?: string | null;
+  label?: string | null;
+  video?: string | null;
   moq: number;
   rating: number | null;
   price_type: 'range' | 'tiered' | 'sku';
@@ -42,6 +45,10 @@ export type ProductDetail = ProductListItem & {
       hexColor?: string;
     }>;
   }>;
-  tieredPrices: Array<{ min_quantity: number; price: number }>;
+  tieredPrices: Array<{
+    min_quantity?: number;
+    minQuantity?: number;
+    price: number | string;
+  }>;
   media: Array<{ id: number; name: string; url: string; type: string }>;
 };

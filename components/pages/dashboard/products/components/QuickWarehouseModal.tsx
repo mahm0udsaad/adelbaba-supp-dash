@@ -104,11 +104,11 @@ export function QuickWarehouseModal({ open, onOpenChange, onWarehouseCreated }: 
 
           <div className="space-y-2">
             <Label htmlFor="warehouse-address">
-              Address
+              {t.address}
             </Label>
             <Input
               id="warehouse-address"
-              placeholder="Enter warehouse address"
+              placeholder={t.address}
               value={address}
               onChange={(e) => setAddress(e.target.value)}
             />

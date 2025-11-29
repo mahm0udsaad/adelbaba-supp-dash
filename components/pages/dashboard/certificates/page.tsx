@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Plus, Shield, ExternalLink, Download, AlertTriangle, CheckCircle, FileText, Award } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { useI18n } from "@/lib/i18n/context"
-import { useMockData } from "@/lib/mock-data-context"
+import { certificatesApi, CertificateItem } from "@/src/services/certificates"
 
 interface Certificate {
   id: string
@@ -32,11 +32,12 @@ interface Certificate {
 
 export default function CertificatesPage() {
   const { t, isArabic } = useI18n()
-  const { certificates: allCertificates, setCertificates } = useMockData()
-  const [loading] = useState(false)
+  const [allCertificates, setAllCertificates] = useState<Certificate[]>([])
+  const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   const [newCertificate, setNewCertificate] = useState({
     name: "",
@@ -51,8 +52,69 @@ export default function CertificatesPage() {
     description: "",
   })
 
+  const fetchCertificates = async () => {
+    setLoading(true)
+    try {
+      const response = await certificatesApi.list()
+      const items = response.data || []
+      
+      const mappedCertificates: Certificate[] = items.map((item: CertificateItem) => {
+        const expiryDate = item.expiry_date || new Date().toISOString()
+        const issueDate = item.issue_date || new Date().toISOString()
+        
+        const now = new Date()
+        const expiry = new Date(expiryDate)
+        const diffMs = expiry.getTime() - now.getTime()
+        const days = diffMs / (1000 * 60 * 60 * 24)
+        
+        let status: Certificate["status"] = "active"
+        if (expiry < now) {
+          status = "expired"
+        } else if (days <= 60) {
+          status = "expiring_soon"
+        }
+
+        // Map numeric or string type ID to UI type
+        let type: Certificate["type"] = "quality"
+        if (item.type === "2" || item.type === "compliance") type = "compliance"
+        if (item.type === "3" || item.type === "environmental") type = "environmental"
+        
+        return {
+          id: String(item.id),
+          name: item.name || "Certificate",
+          type,
+          issuer: item.issuer || "",
+          issueDate,
+          expiryDate,
+          status,
+          certificateNumber: item.certificate_number || "",
+          scope: item.scope || "",
+          documentUrl: item.file_url || item.document_url || "",
+          verificationUrl: item.verification_url || "",
+          applicableProducts: item.applicable_products || [],
+          description: item.description || "",
+        }
+      })
+      
+      setAllCertificates(mappedCertificates)
+    } catch (error) {
+      console.error("Failed to fetch certificates:", error)
+      toast({ 
+        title: "Error", 
+        description: isArabic ? "فشل في تحميل الشهادات" : "Failed to load certificates", 
+        variant: "destructive" 
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCertificates()
+  }, [])
+
   const certificates = useMemo(() => {
-    let filtered = [...(allCertificates as Certificate[])]
+    let filtered = [...allCertificates]
     if (typeFilter !== "all") filtered = filtered.filter((cert) => cert.type === typeFilter)
     if (statusFilter !== "all") filtered = filtered.filter((cert) => cert.status === statusFilter)
     return filtered
@@ -68,41 +130,43 @@ export default function CertificatesPage() {
         !newCertificate.issueDate ||
         !newCertificate.expiryDate ||
         !newCertificate.certificateNumber ||
-        !newCertificate.scope
+        !newCertificate.scope ||
+        !selectedFile // Require file
       ) {
-        toast({ title: t.failedToAddCertificate, description: isArabic ? "يرجى ملء جميع الحقول المطلوبة" : "Please fill all required fields", variant: "destructive" })
+        toast({ 
+            title: t.failedToAddCertificate, 
+            description: isArabic ? "يرجى ملء جميع الحقول المطلوبة وتحميل الملف" : "Please fill all required fields and upload a file", 
+            variant: "destructive" 
+        })
         return
       }
-
-      const now = new Date()
-      const issue = new Date(newCertificate.issueDate)
-      const expiry = new Date(newCertificate.expiryDate)
-      const diffMs = expiry.getTime() - now.getTime()
-      const days = diffMs / (1000 * 60 * 60 * 24)
-      const status: Certificate["status"] = expiry < now ? "expired" : days <= 60 ? "expiring_soon" : "active"
 
       const applicableProducts = String(newCertificate.applicableProducts)
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean)
 
-      const toAdd: Certificate = {
-        id: String(Date.now()),
-        name: newCertificate.name,
-        type: newCertificate.type as Certificate["type"],
-        issuer: newCertificate.issuer,
-        issueDate: issue.toISOString(),
-        expiryDate: expiry.toISOString(),
-        status,
-        certificateNumber: newCertificate.certificateNumber,
-        scope: newCertificate.scope,
-        documentUrl: "",
-        verificationUrl: newCertificate.verificationUrl,
-        applicableProducts,
-        description: newCertificate.description,
-      }
+      // Map UI type to API ID (1, 2, 3)
+      let typeId = 1
+      if (newCertificate.type === "compliance") typeId = 2
+      if (newCertificate.type === "environmental") typeId = 3
 
-      setCertificates((prev) => [toAdd, ...prev])
+      await certificatesApi.create({
+        name: newCertificate.name,
+        certificate_type_id: typeId,
+        issuer: newCertificate.issuer,
+        issued_at: newCertificate.issueDate,
+        expires_at: newCertificate.expiryDate,
+        certificate_number: newCertificate.certificateNumber,
+        scope: newCertificate.scope,
+        verification_url: newCertificate.verificationUrl,
+        applicable_products: applicableProducts,
+        description: newCertificate.description,
+        documents: [selectedFile],
+      })
+
+      await fetchCertificates() // Refresh list
+      
       setShowAddDialog(false)
       setNewCertificate({
         name: "",
@@ -116,6 +180,8 @@ export default function CertificatesPage() {
         applicableProducts: "",
         description: "",
       })
+      setSelectedFile(null)
+      
       toast({ title: t.certificateAdded, description: t.certificateAddedDesc })
     } catch (error) {
       console.error("Failed to add certificate:", error)
@@ -150,11 +216,18 @@ export default function CertificatesPage() {
   }
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return ""
     return new Date(dateString).toLocaleDateString(isArabic ? "ar-SA" : "en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     })
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0])
+    }
   }
 
   return (
@@ -259,6 +332,18 @@ export default function CertificatesPage() {
                 />
               </div>
 
+               <div className="space-y-2">
+                <Label htmlFor="file">{isArabic ? "ملف الشهادة" : "Certificate File"} *</Label>
+                <Input
+                  id="file"
+                  type="file"
+                  onChange={handleFileChange}
+                  required
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                />
+                {selectedFile && <p className="text-sm text-muted-foreground">{selectedFile.name}</p>}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="verificationUrl">{t.verificationUrl}</Label>
                 <Input
@@ -290,8 +375,8 @@ export default function CertificatesPage() {
               </div>
 
               <div className="flex gap-2 pt-4">
-                <Button onClick={handleAddCertificate} className="flex-1">
-                  {isArabic ? "إضافة الشهادة" : "Add Certificate"}
+                <Button onClick={handleAddCertificate} className="flex-1" disabled={loading}>
+                  {loading ? (isArabic ? "جاري الإضافة..." : "Adding...") : (isArabic ? "إضافة الشهادة" : "Add Certificate")}
                 </Button>
                 <Button variant="outline" onClick={() => setShowAddDialog(false)} className="bg-transparent">
                   {isArabic ? "إلغاء" : "Cancel"}
@@ -401,12 +486,12 @@ export default function CertificatesPage() {
                   )}
 
                   <div className="flex gap-2 pt-2 border-t">
-                    <Button variant="outline" size="sm" className="flex-1 bg-transparent">
+                    <Button variant="outline" size="sm" className="flex-1 bg-transparent" onClick={() => certificate.documentUrl && window.open(certificate.documentUrl, '_blank')}>
                       <Download className="h-4 w-4 mr-2" />
                       {t.download}
                     </Button>
                     {certificate.verificationUrl && (
-                      <Button variant="outline" size="sm" className="flex-1 bg-transparent">
+                      <Button variant="outline" size="sm" className="flex-1 bg-transparent" onClick={() => window.open(certificate.verificationUrl, '_blank')}>
                         <ExternalLink className="h-4 w-4 mr-2" />
                         {t.verify}
                       </Button>

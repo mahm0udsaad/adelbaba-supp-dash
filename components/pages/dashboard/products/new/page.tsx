@@ -52,11 +52,12 @@ export default function NewProductPage() {
       })
 
       const newProduct = await createProduct(formData)
+      const productName = (newProduct as any)?.name || "Your product"
       
       // Show success toast
       toast.success("Product Created Successfully! 🎉", {
         id: toastId,
-        description: `${newProduct.name || "Your product"} has been added to your catalog`,
+        description: `${productName} has been added to your catalog`,
         duration: 5000
       })
       

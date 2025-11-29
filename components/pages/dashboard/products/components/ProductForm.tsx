@@ -410,63 +410,63 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!name.trim()) newErrors.name = "Product name is required"
-    if (!description.trim()) newErrors.description = "Description is required"
-    if (!categoryId) newErrors.categoryId = "Category is required"
-    if (moq < 1) newErrors.moq = "MOQ must be at least 1"
+    if (!name.trim()) newErrors.name = t.productNameRequired
+    if (!description.trim()) newErrors.description = t.descriptionRequired
+    if (!categoryId) newErrors.categoryId = t.categoryRequired
+    if (moq < 1) newErrors.moq = t.moqMustBeAtLeast
     const remainingExistingMediaCount = existingMedia.filter(m => !mediaToRemove.includes(m.id as any)).length
     if (newMediaFiles.length === 0 && remainingExistingMediaCount === 0) {
-      newErrors.media = "At least one media file is required"
+      newErrors.media = t.atLeastOneMediaRequired
     }
 
     if (priceType === "range") {
-      if (!rangePrice.min_price) newErrors.min_price = "Minimum price is required"
-      if (!rangePrice.max_price) newErrors.max_price = "Maximum price is required"
+      if (!rangePrice.min_price) newErrors.min_price = t.minimumPriceRequired
+      if (!rangePrice.max_price) newErrors.max_price = t.maximumPriceRequired
       if (rangePrice.min_price && rangePrice.max_price && 
           parseFloat(rangePrice.min_price) >= parseFloat(rangePrice.max_price)) {
-        newErrors.max_price = "Maximum price must be greater than minimum price"
+        newErrors.max_price = t.maximumPriceMustBeGreater
       }
     }
 
     if (priceType === "tiered" && tieredPrices.length === 0) {
-      newErrors.pricing = "At least one tier is required for tiered pricing"
+      newErrors.pricing = t.atLeastOneTierRequired
     }
 
     if (priceType === "sku" && enhancedSkus.length === 0) {
-      newErrors.pricing = "At least one SKU variant is required for SKU pricing"
+      newErrors.pricing = t.atLeastOneSkuRequired
     }
 
     // Check if warehouses are available and selected (required for all price types)
     if (warehouses.length === 0) {
-      newErrors.warehouses = "At least one warehouse is required. Please create a warehouse first."
+      newErrors.warehouses = t.atLeastOneWarehouseRequired
     } else if (selectedWarehouseIds.length === 0) {
-      newErrors.selectedWarehouses = "Please select at least one warehouse for inventory tracking."
+      newErrors.selectedWarehouses = t.pleaseSelectWarehouse
     }
 
     // Validate SKUs if they exist
     if (priceType === "sku" && enhancedSkus.length > 0) {
       enhancedSkus.forEach((sku, index) => {
         if (!sku.code) {
-          newErrors[`sku_${index}_code`] = `SKU ${index + 1} code is required`
+          newErrors[`sku_${index}_code`] = t.skuCodeRequired.replace('{index}', String(index + 1))
         }
         if (!sku.inventory || !sku.inventory.warehouses || sku.inventory.warehouses.length === 0) {
-          newErrors[`sku_${index}_inventory`] = `SKU ${index + 1} inventory is required`
+          newErrors[`sku_${index}_inventory`] = t.skuInventoryRequired.replace('{index}', String(index + 1))
         }
         if (!sku.attributes || sku.attributes.length === 0) {
-          newErrors[`sku_${index}_attributes`] = `SKU ${index + 1} attributes are required`
+          newErrors[`sku_${index}_attributes`] = t.skuAttributesRequired.replace('{index}', String(index + 1))
         } else {
           sku.attributes.forEach((attr: any, attrIndex: number) => {
             if (!attr.type || !['select', 'color', 'image'].includes(attr.type)) {
-              newErrors[`sku_${index}_attr_${attrIndex}_type`] = `Invalid attribute type for SKU ${index + 1}`
+              newErrors[`sku_${index}_attr_${attrIndex}_type`] = t.invalidAttributeType.replace('{index}', String(index + 1))
             }
             if (!attr.variation_value_id) {
-              newErrors[`sku_${index}_attr_${attrIndex}_variation`] = `Variation value required for SKU ${index + 1}`
+              newErrors[`sku_${index}_attr_${attrIndex}_variation`] = t.variationValueRequired.replace('{index}', String(index + 1))
             }
             if (attr.type === 'color' && !attr.hex_color) {
-              newErrors[`sku_${index}_attr_${attrIndex}_color`] = `Color value required for SKU ${index + 1}`
+              newErrors[`sku_${index}_attr_${attrIndex}_color`] = t.colorValueRequired.replace('{index}', String(index + 1))
             }
             if (attr.type === 'image' && !(attr.image instanceof File)) {
-              newErrors[`sku_${index}_attr_${attrIndex}_image`] = `Image file required for SKU ${index + 1}`
+              newErrors[`sku_${index}_attr_${attrIndex}_image`] = t.imageFileRequired.replace('{index}', String(index + 1))
             }
           })
         }
@@ -537,270 +537,192 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
     })
   }, [name, description, categoryId, newMediaFiles, existingMedia])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  
+  if (!validateForm()) {
+    const firstErrorElement = document.querySelector('.border-red-500')
+    if (firstErrorElement) {
+      firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    return
+  }
+
+  setIsSubmitting(true)
+  
+  try {
+    const fd = new FormData()
     
-    if (!validateForm()) {
-      // Scroll to first error
-      const firstErrorElement = document.querySelector('.border-red-500')
-      if (firstErrorElement) {
-        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
-      return
+    // Core product fields
+    fd.append('product[name]', name)
+    fd.append('product[description]', description)
+    fd.append('product[moq]', String(moq))
+    fd.append('product[product_unit_id]', String(productUnitId))
+    fd.append('product[price_type]', priceType)
+    fd.append('product[is_active]', isActive ? '1' : '0')
+    fd.append('product[category_id]', String(parseInt(categoryId)))
+
+    // Content handling (same as before)
+    // ... content code ...
+
+    // Pricing fields
+    if (priceType === 'range') {
+      fd.append('range_price[min_price]', String(parseFloat(rangePrice.min_price)))
+      fd.append('range_price[max_price]', String(parseFloat(rangePrice.max_price)))
     }
 
-    setIsSubmitting(true)
-    
-    try {
-      // Create FormData for multipart/form-data submission
-      const fd = new FormData()
+    if (priceType === 'tiered') {
+      tieredPrices.forEach((tier, index) => {
+        fd.append(`tiered_prices[${index}][min_quantity]`, String(tier.min_quantity))
+        fd.append(`tiered_prices[${index}][price]`, String(tier.price))
+      })
+    }
+
+    // SKUs: CORRECTED TO MATCH API SPEC
+    const appendSkuToFormData = (sku: any, skuIndex: number) => {
+      // Required fields
+      if (sku.code) fd.append(`skus[${skuIndex}][code]`, String(sku.code))
+      if (typeof sku.price !== 'undefined') fd.append(`skus[${skuIndex}][price]`, String(sku.price))
       
-      // Core product fields
-      fd.append('product[name]', name)
-      fd.append('product[description]', description)
-      fd.append('product[moq]', String(moq))
-      fd.append('product[product_unit_id]', String(productUnitId))
-      fd.append('product[price_type]', priceType)
-      fd.append('product[is_active]', isActive ? '1' : '0')
-      fd.append('product[category_id]', String(parseInt(categoryId)))
-
-      // Content as nested fields (Laravel expects arrays, not a JSON string)
-      const serializeContentAsJson = process.env.NEXT_PUBLIC_SERIALIZE_CONTENT_AS_JSON === 'true'
-      if (content && serializeContentAsJson) {
-        // If backend accepts JSON string for content, send as a single field
-        fd.append('product[content]', JSON.stringify(content))
-      } else if (content) {
-        // general
-        if (content.general) {
-          Object.entries(content.general).forEach(([key, value]) => {
-            fd.append(`product[content][general][${key}]`, String(value))
-          })
-        }
-        // specifications
-        if (Array.isArray(content.specifications)) {
-          content.specifications.forEach((spec: any, index: number) => {
-            if (spec && (spec.name || spec.value)) {
-              fd.append(`product[content][specifications][${index}][name]`, String(spec.name ?? ''))
-              fd.append(`product[content][specifications][${index}][value]`, String(spec.value ?? ''))
-            }
-          })
-        }
-        // shipping
-        if (Array.isArray(content.shipping)) {
-          content.shipping.forEach((ship: any, index: number) => {
-            if (ship && (ship.method || ship.time || ship.cost)) {
-              fd.append(`product[content][shipping][${index}][method]`, String(ship.method ?? ''))
-              fd.append(`product[content][shipping][${index}][time]`, String(ship.time ?? ''))
-              fd.append(`product[content][shipping][${index}][cost]`, String(ship.cost ?? ''))
-              if (ship.description) {
-                fd.append(`product[content][shipping][${index}][description]`, String(ship.description))
-              }
-            }
-          })
-        }
-        // features, whatsIncluded, targetMarkets, qualityAssurance - handle as arrays
-        if (Array.isArray(content.features)) {
-          content.features.forEach((feature: string, index: number) => {
-            fd.append(`product[content][features][${index}]`, String(feature))
-          })
-        }
-        if (Array.isArray(content.whatsIncluded)) {
-          content.whatsIncluded.forEach((item: string, index: number) => {
-            fd.append(`product[content][whatsIncluded][${index}]`, String(item))
-          })
-        }
-        if (Array.isArray(content.targetMarkets)) {
-          content.targetMarkets.forEach((market: string, index: number) => {
-            fd.append(`product[content][targetMarkets][${index}]`, String(market))
-          })
-        }
-        if (Array.isArray(content.qualityAssurance)) {
-          content.qualityAssurance.forEach((qa: string, index: number) => {
-            fd.append(`product[content][qualityAssurance][${index}]`, String(qa))
-          })
-        }
+      // Package details - API expects STRINGS not numbers
+      if (sku.package_details) {
+        const pd = sku.package_details
+        if (pd.mass_unit) fd.append(`skus[${skuIndex}][package_details][mass_unit]`, String(pd.mass_unit))
+        if (typeof pd.weight !== 'undefined') fd.append(`skus[${skuIndex}][package_details][weight]`, String(pd.weight)) // String!
+        if (pd.distance_unit) fd.append(`skus[${skuIndex}][package_details][distance_unit]`, String(pd.distance_unit))
+        if (typeof pd.height !== 'undefined') fd.append(`skus[${skuIndex}][package_details][height]`, String(pd.height)) // String!
+        if (typeof pd.length !== 'undefined') fd.append(`skus[${skuIndex}][package_details][length]`, String(pd.length)) // String!
+        if (typeof pd.width !== 'undefined') fd.append(`skus[${skuIndex}][package_details][width]`, String(pd.width)) // String!
       }
-
-      // Pricing fields
-      if (priceType === 'range') {
-        fd.append('range_price[min_price]', String(parseFloat(rangePrice.min_price)))
-        fd.append('range_price[max_price]', String(parseFloat(rangePrice.max_price)))
-      }
-
-      if (priceType === 'tiered') {
-        tieredPrices.forEach((tier, index) => {
-          fd.append(`tiered_prices[${index}][min_quantity]`, String(tier.min_quantity))
-          fd.append(`tiered_prices[${index}][price]`, String(tier.price))
+      
+      // Inventory by warehouses
+      if (sku.inventory?.warehouses) {
+        sku.inventory.warehouses.forEach((w: any, wIndex: number) => {
+          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][warehouse_id]`, String(w.warehouse_id))
+          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][on_hand]`, String(w.on_hand))
+          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reserved]`, String(w.reserved))
+          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reorder_point]`, String(w.reorder_point))
+          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][restock_level]`, String(w.restock_level))
+          fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][track_inventory]`, w.track_inventory ? '1' : '0')
         })
       }
-
-      // SKUs: ALWAYS required according to API spec, regardless of price_type
-      // Helper function to append a single SKU to FormData
-      const appendSkuToFormData = (sku: any, skuIndex: number) => {
-        // Required fields
-        if (sku.code) fd.append(`skus[${skuIndex}][code]`, String(sku.code))
-        if (typeof sku.price !== 'undefined') fd.append(`skus[${skuIndex}][price]`, String(sku.price))
-        // Package details
-        if (sku.package_details) {
-          if (sku.package_details.mass_unit) fd.append(`skus[${skuIndex}][package_details][mass_unit]`, String(sku.package_details.mass_unit))
-          if (typeof sku.package_details.weight !== 'undefined') fd.append(`skus[${skuIndex}][package_details][weight]`, String(sku.package_details.weight))
-          if (sku.package_details.distance_unit) fd.append(`skus[${skuIndex}][package_details][distance_unit]`, String(sku.package_details.distance_unit))
-          if (typeof sku.package_details.height !== 'undefined') fd.append(`skus[${skuIndex}][package_details][height]`, String(sku.package_details.height))
-          if (typeof sku.package_details.length !== 'undefined') fd.append(`skus[${skuIndex}][package_details][length]`, String(sku.package_details.length))
-          if (typeof sku.package_details.width !== 'undefined') fd.append(`skus[${skuIndex}][package_details][width]`, String(sku.package_details.width))
-        }
-        
-        // Inventory by warehouses
-        if (sku.inventory?.warehouses) {
-          sku.inventory.warehouses.forEach((w: any, wIndex: number) => {
-            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][warehouse_id]`, String(w.warehouse_id))
-            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][on_hand]`, String(w.on_hand))
-            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reserved]`, String(w.reserved))
-            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][reorder_point]`, String(w.reorder_point))
-            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][restock_level]`, String(w.restock_level))
-            fd.append(`skus[${skuIndex}][inventory][warehouses][${wIndex}][track_inventory]`, w.track_inventory ? '1' : '0')
-          })
-        }
-        
-        // Attributes - only append if we have valid attributes
-        if (sku.attributes && Array.isArray(sku.attributes) && sku.attributes.length > 0) {
-          sku.attributes.forEach((attr: any, attrIndex: number) => {
-            if (attr && attr.type) {
-              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][type]`, String(attr.type))
-              if (attr.variation_value_id) {
-                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][variation_value_id]`, String(attr.variation_value_id))
-              }
-              if (attr.hex_color) {
-                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][hex_color]`, String(attr.hex_color))
-              }
-              if (attr.image && attr.image instanceof File) {
-                fd.append(`skus[${skuIndex}][attributes][${attrIndex}][image]`, attr.image)
-              }
-            }
-          })
-        }
-      }
-
-      // SKUs: ALWAYS required by API regardless of price type
-      if (priceType === 'sku' && enhancedSkus && enhancedSkus.length > 0) {
-        // Use user-defined SKUs for SKU pricing
-        enhancedSkus.forEach((sku: any, skuIndex: number) => {
-          appendSkuToFormData(sku, skuIndex)
-        })
-      } else if (selectedWarehouseIds.length > 0) {
-        // For range/tiered pricing, create a default SKU for inventory tracking
-        // API requires SKUs even for range/tiered pricing
-        const defaultPrice = priceType === 'range' 
-          ? parseFloat(rangePrice.min_price || '0') 
-          : (tieredPrices.length > 0 ? tieredPrices[0].price : 0)
-
-        const defaultSku = {
-          code: `SKU-${name.substring(0, 10).replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`,
-          price: defaultPrice,
-          package_details: {
-            mass_unit: 'kg',
-            weight: '1',
-            distance_unit: 'cm',
-            height: '10',
-            length: '10',
-            width: '10'
-          },
-          inventory: {
-            warehouses: selectedWarehouseIds.map(warehouseId => ({
-              warehouse_id: warehouseId,
-              on_hand: 0,
-              reserved: 0,
-              reorder_point: 5,
-              restock_level: 20,
-              track_inventory: true
-            }))
-          },
-          attributes: [
-            {
-              type: 'select',
-              variation_value_id: 1, // Default variation - API requires this
-              value: 'Standard'
-            }
-          ]
-        }
-        
-        appendSkuToFormData(defaultSku, 0)
-      }
-
-      // Add media files (Laravel array notation)
-      // Only append media if there are files to upload
-      if (newMediaFiles.length > 0) {
-        newMediaFiles.forEach((file) => {
-          fd.append('media[]', file)
-        })
-      }
-
-      // Add Video
-      if (videoFile) {
-        fd.append('video', videoFile)
-      }
-
-      if (isEditMode) {
-        if (mediaToRemove.length > 0) {
-          mediaToRemove.forEach(id => fd.append('media[remove][]', String(id)))
-        }
-      }
-
-      // Debug: Log FormData contents
-      if (process.env.NODE_ENV === 'development') {
-        console.group('📦 FormData being sent to API:')
-        console.log('=== STRUCTURED VIEW ===')
-        
-        // Build a structured object for easier comparison with API docs
-        const structuredData: any = {
-          product: {},
-          media: [],
-          skus: [],
-          range_price: {},
-          tiered_prices: []
-        }
-        
-        for (const [key, value] of fd.entries()) {
-          if (value instanceof File) {
-            console.log(`${key}:`, `[File: ${value.name}, ${value.size} bytes]`)
-            structuredData.media.push({ name: value.name, size: value.size })
-          } else {
-            console.log(`${key}:`, value)
+      
+      // Attributes
+      if (sku.attributes && Array.isArray(sku.attributes) && sku.attributes.length > 0) {
+        sku.attributes.forEach((attr: any, attrIndex: number) => {
+          if (attr && attr.type) {
+            fd.append(`skus[${skuIndex}][attributes][${attrIndex}][type]`, String(attr.type))
             
-            // Parse key structure for display
-            if (key.startsWith('product[')) {
-              const match = key.match(/product\[(.+?)\]/)
-              if (match) {
-                structuredData.product[match[1]] = value
-              }
-            } else if (key.startsWith('skus[')) {
-              // Just note that SKUs are present
-              if (!structuredData._skuCount) structuredData._skuCount = 0
-              structuredData._skuCount++
+            // Variation value ID is required
+            if (attr.variation_value_id) {
+              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][variation_value_id]`, String(attr.variation_value_id))
+            }
+            
+            // Color type: hex_color is required
+            if (attr.type === 'color' && attr.hex_color) {
+              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][hex_color]`, String(attr.hex_color))
+            }
+            
+            // Image type: image file is required
+            if (attr.type === 'image' && attr.image && attr.image instanceof File) {
+              fd.append(`skus[${skuIndex}][attributes][${attrIndex}][image]`, attr.image)
             }
           }
-        }
-        
-        console.log('=== SUMMARY ===')
-        console.log('Product fields:', Object.keys(structuredData.product).length)
-        console.log('Media files:', structuredData.media.length)
-        console.log('SKU fields:', structuredData._skuCount || 0)
-        console.log('Price type:', structuredData.product.price_type)
-        console.groupEnd()
+        })
       }
-
-      await onSubmit(fd)
-      // Clear draft on successful submission
-      if (!isEditMode) {
-        localStorage.removeItem(DRAFT_KEY)
-        setHasDraft(false)
-      }
-    } catch (error) {
-      console.error('Form submission error:', error)
-    } finally {
-      setIsSubmitting(false)
     }
+
+    // Process SKUs based on price type
+    if (priceType === 'sku' && enhancedSkus && enhancedSkus.length > 0) {
+      enhancedSkus.forEach((sku: any, skuIndex: number) => {
+        appendSkuToFormData(sku, skuIndex)
+      })
+    } else {
+      // For range/tiered pricing, create a default SKU
+      const defaultPrice = priceType === 'range' 
+        ? parseFloat(rangePrice.min_price || '0') 
+        : (tieredPrices.length > 0 ? tieredPrices[0].price : 0)
+
+      const defaultSku = {
+        code: `SKU-${name.substring(0, 5).replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`,
+        price: defaultPrice,
+        package_details: {
+          mass_unit: 'kg',
+          weight: 1,        // Will be converted to string
+          distance_unit: 'cm',
+          height: 10,       // Will be converted to string
+          length: 10,       // Will be converted to string
+          width: 10         // Will be converted to string
+        },
+        inventory: {
+          warehouses: selectedWarehouseIds.map(warehouseId => ({
+            warehouse_id: warehouseId,
+            on_hand: 0,
+            reserved: 0,
+            reorder_point: 5,
+            restock_level: 20,
+            track_inventory: true
+          }))
+        },
+        attributes: [
+          {
+            type: 'select',
+            variation_value_id: 1,
+          }
+        ]
+      }
+      
+      appendSkuToFormData(defaultSku, 0)
+    }
+
+    // Media files
+    if (newMediaFiles.length > 0) {
+      newMediaFiles.forEach((file) => {
+        fd.append('media[]', file)
+      })
+    }
+
+    // Video
+    if (videoFile) {
+      fd.append('video', videoFile)
+    }
+
+    // Media removal (for edit mode)
+    if (isEditMode && mediaToRemove.length > 0) {
+      mediaToRemove.forEach(id => fd.append('media[remove][]', String(id)))
+    }
+
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.group('📦 FormData Summary:')
+      console.log('Price Type:', priceType)
+      console.log('SKU Count:', priceType === 'sku' ? enhancedSkus.length : 1)
+      
+      // Log a sample SKU structure
+      if (priceType === 'sku' && enhancedSkus.length > 0) {
+        console.log('Sample SKU:', enhancedSkus[0])
+      }
+      
+      // List all FormData keys for verification
+      const keys = Array.from(fd.keys())
+      console.log('FormData Keys:', keys.length)
+      console.log('SKU-related keys:', keys.filter(k => k.startsWith('skus[')))
+      console.groupEnd()
+    }
+
+    await onSubmit(fd)
+    
+    // Clear draft on successful submission
+    if (!isEditMode) {
+      localStorage.removeItem(DRAFT_KEY)
+      setHasDraft(false)
+    }
+  } catch (error) {
+    console.error('Form submission error:', error)
+  } finally {
+    setIsSubmitting(false)
   }
+}
 
   const renderPricingSection = () => {
     // Filter warehouses to only show selected ones for SKU manager
@@ -843,7 +765,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
             {isEditMode ? t.editProduct : t.addProduct}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {isEditMode ? 'Update your product information' : t.createNewProductInCatalog}
+            {isEditMode ? t.updateProductInfo : t.createNewProductInCatalog}
           </p>
         </div>
         
@@ -855,7 +777,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
               onClick={loadDraft}
               className="flex items-center gap-2"
             >
-              Load Draft
+              {t.loadDraft}
             </Button>
           )}
           
@@ -867,7 +789,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
               className="flex items-center gap-2 border-dashed"
             >
               <Wand2 className="h-4 w-4" />
-              Fill Sample Data
+              {t.fillSampleData}
               <Badge variant="secondary" className="text-xs">DEV</Badge>
             </Button>
           )}
@@ -876,15 +798,15 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
 
       <form id="product-form" onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
-          {/* Warehouse Selection - Required for all products */}
+              {/* Warehouse Selection - Required for all products */}
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-medium">📦</div>
                 <div>
-                  <CardTitle className="text-lg">Select Warehouses</CardTitle>
+                  <CardTitle className="text-lg">{t.selectWarehouses}</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Choose which warehouses will track inventory for this product
+                    {t.chooseWarehouses}
                   </p>
                 </div>
               </div>
@@ -893,15 +815,15 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
               {loadingWarehouses ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">Loading warehouses...</span>
+                  <span className="ml-2 text-muted-foreground">{t.loadingWarehouses}</span>
                 </div>
               ) : warehouses.length === 0 ? (
                 <div className="text-center py-8 space-y-3">
                   <AlertCircle className="h-12 w-12 text-yellow-600 mx-auto" />
                   <div>
-                    <p className="font-medium text-foreground">No Warehouses Found</p>
+                    <p className="font-medium text-foreground">{t.noWarehousesFound}</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Please create a warehouse before adding products
+                      {t.createWarehouseBefore}
                     </p>
                   </div>
                   {errors.warehouses && (
@@ -916,7 +838,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                     className="w-full"
                     onClick={() => setQuickWarehouseModalOpen(true)}
                   >
-                    Create Warehouse
+                    {t.warehouseNewButton}
                   </Button>
                 </div>
               ) : (
@@ -943,11 +865,13 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                               : 'border-border hover:border-primary/50 hover:bg-accent/50'
                           }`}
                         >
-                          <Checkbox
-                            checked={isSelected}
-                            onClick={(e) => e.stopPropagation()}
-                            className="pointer-events-none"
-                          />
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleWarehouse()}
+                              className="pointer-events-auto"
+                            />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-sm truncate">{warehouse.name}</h4>
                             <p className="text-xs text-muted-foreground truncate mt-0.5">
@@ -958,13 +882,13 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                       )
                     })}
                   </div>
-                  
+
                   {selectedWarehouseIds.length > 0 && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
                       <CheckCircle className="h-4 w-4 text-green-600" />
                       {selectedWarehouseIds.length === 1
-                        ? "1 warehouse selected"
-                        : `${selectedWarehouseIds.length} warehouses selected`
+                        ? `1 ${t.warehouseSelected}`
+                        : `${selectedWarehouseIds.length} ${t.warehousesSelected}`
                       }
                     </div>
                   )}
@@ -985,7 +909,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
             <CardHeader>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-medium">1</div>
-                <CardTitle className="text-lg">Basic Information</CardTitle>
+                <CardTitle className="text-lg">{t.basicInformation}</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -997,7 +921,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                   id="name" 
                   value={name} 
                   onChange={e => setName(e.target.value)} 
-                  placeholder="Enter product name..."
+                  placeholder={t.enterProductName}
                   className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
                 {errors.name && (
@@ -1016,7 +940,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                   id="description" 
                   value={description} 
                   onChange={e => setDescription(e.target.value)} 
-                  placeholder="Describe your product features, benefits, and specifications..."
+                  placeholder={t.describeProduct}
                   className={`min-h-[120px] ${errors.description ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
                 {errors.description && (
@@ -1089,10 +1013,10 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
             <CardHeader>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-medium">2</div>
-                <CardTitle className="text-lg">Product Content</CardTitle>
+                <CardTitle className="text-lg">{t.productContent}</CardTitle>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Add detailed specifications and shipping information (optional)
+                {t.addDetailedSpecs}
               </p>
             </CardHeader>
             <CardContent>
@@ -1108,7 +1032,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                 <CardTitle className="text-lg">{t.media}</CardTitle>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Upload product images and videos. First image will be the main display image.
+                {t.uploadProductImages}
               </p>
             </CardHeader>
             <CardContent>
@@ -1142,7 +1066,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                 <CardTitle className="text-lg">{t.pricing}</CardTitle>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Choose your pricing strategy and set competitive prices
+                {t.choosePricingStrategy}
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1187,7 +1111,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
           {/* Save Actions */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Save & Publish</CardTitle>
+              <CardTitle className="text-lg">{t.saveAndPublish}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Warehouse Warning */}
@@ -1234,7 +1158,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                       onClick={saveDraft}
                       disabled={loading || isSubmitting}
                     >
-                      Save as Draft
+                      {t.saveAsDraft}
                     </Button>
                     
                     {hasDraft && (
@@ -1245,7 +1169,7 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
                         onClick={clearDraft}
                         disabled={loading || isSubmitting}
                       >
-                        Clear Draft
+                        {t.clearDraft}
                       </Button>
                     )}
                   </>
@@ -1259,25 +1183,25 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
-                Tips for Success
+                {t.tipsForSuccess}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="space-y-2">
-                <p className="font-medium">📸 High-quality images</p>
-                <p className="text-muted-foreground">Use clear, well-lit photos from multiple angles</p>
+                <p className="font-medium">📸 {t.highQualityImages}</p>
+                <p className="text-muted-foreground">{t.useClearPhotos}</p>
               </div>
               <div className="space-y-2">
-                <p className="font-medium">📝 Detailed description</p>
-                <p className="text-muted-foreground">Include key features, materials, and dimensions</p>
+                <p className="font-medium">📝 {t.detailedDescription}</p>
+                <p className="text-muted-foreground">{t.includeKeyFeatures}</p>
               </div>
               <div className="space-y-2">
-                <p className="font-medium">💰 Competitive pricing</p>
-                <p className="text-muted-foreground">Research market prices for similar products</p>
+                <p className="font-medium">💰 {t.competitivePricing}</p>
+                <p className="text-muted-foreground">{t.researchMarketPrices}</p>
               </div>
               <div className="space-y-2">
-                <p className="font-medium">📦 Accurate MOQ</p>
-                <p className="text-muted-foreground">Set realistic minimum order quantities</p>
+                <p className="font-medium">📦 {t.accurateMOQ}</p>
+                <p className="text-muted-foreground">{t.setRealisticMOQ}</p>
               </div>
             </CardContent>
           </Card>

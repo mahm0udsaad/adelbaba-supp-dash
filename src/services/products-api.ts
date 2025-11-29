@@ -38,7 +38,9 @@ export const createProduct = async (productData: FormData): Promise<ProductDetai
       "Content-Type": "multipart/form-data",
     },
   });
-  return response.data.data;
+  const body = response.data;
+  // Some endpoints return { data: {...} }, others may return the product directly.
+  return (body?.data ?? body) as ProductDetail;
 };
 
 /**

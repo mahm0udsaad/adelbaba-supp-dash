@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,8 +25,8 @@ interface Warehouse {
 interface SkuAttribute {
   type: "select" | "color" | "image";
   variation_value_id: number;
-  hex_color?: string; // Required if type is "color"
-  image?: File; // Required if type is "image"
+  hex_color?: string;
+  image?: File;
 }
 
 type MassUnit = "g" | "kg" | "lb" | "oz";
@@ -94,6 +94,7 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
   const { t } = useI18n();
   const [attributes, setAttributes] = useState<AttributeVariation[]>([]);
   const [expandedSkus, setExpandedSkus] = useState<Set<number>>(new Set());
+  const isInitialized = useRef(false);
 
   // Mock data - in real app, these would come from props or API
   const mockWarehouses: Warehouse[] = useMemo(() => (
@@ -134,12 +135,12 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
         code: `SKU_${code}`,
         price: 0,
         package_details: {
-          mass_unit: 'lb',
-          weight: 1,
-          distance_unit: 'in',
-          height: 1,
-          length: 1,
-          width: 1,
+          mass_unit: 'lb' as MassUnit,
+          weight: 1,                    // Stored as number, converted to string during submission
+          distance_unit: 'in' as DistanceUnit,
+          height: 1,                    // Stored as number, converted to string during submission
+          length: 1,                    // Stored as number, converted to string during submission
+          width: 1,                     // Stored as number, converted to string during submission
         },
         inventory: {
           warehouses: mockWarehouses.map(warehouse => ({
@@ -156,10 +157,31 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
     });
   }, [attributes, mockWarehouses]);
 
+  // Initialize attributes only once
   useEffect(() => {
-    if (attributes.length === 0) return;
-    setSkus(generatedSkus);
-  }, [generatedSkus, setSkus, attributes.length]);
+    if (!isInitialized.current && attributes.length === 0) {
+      isInitialized.current = true;
+      setAttributes([{ 
+        name: 'Variation', 
+        type: 'select',
+        values: [] 
+      }]);
+    }
+  }, [attributes.length]);
+
+  // Update SKUs only when generated SKUs actually change
+  useEffect(() => {
+    if (!isInitialized.current || attributes.length === 0) return;
+    
+    // Create a stable comparison key
+    const newSkuKeys = generatedSkus.map(s => s.code).sort().join('|');
+    const currentSkuKeys = skus.map(s => s.code).sort().join('|');
+    
+    // Only update if SKUs have actually changed
+    if (newSkuKeys !== currentSkuKeys && generatedSkus.length > 0) {
+      setSkus(generatedSkus);
+    }
+  }, [generatedSkus.map(s => s.code).join('|')]);
 
   const addAttribute = () => {
     setAttributes([...attributes, { 
@@ -523,7 +545,12 @@ export function EnhancedSkuManager({ skus, setSkus, warehouses = [], variationVa
                                         updateSkuWarehouse(skuIndex, warehouseIndex, 'track_inventory', Boolean(checked))
                                       }
                                     />
-                                    <Label className="text-sm">{t.trackInventory || "Track Inventory"}</Label>
+                                    <Label className="text-sm cursor-pointer" onClick={(e) => {
+                                      e.preventDefault();
+                                      updateSkuWarehouse(skuIndex, warehouseIndex, 'track_inventory', !warehouse.track_inventory);
+                                    }}>
+                                      {t.trackInventory || "Track Inventory"}
+                                    </Label>
                                   </div>
                                 </div>
                                 

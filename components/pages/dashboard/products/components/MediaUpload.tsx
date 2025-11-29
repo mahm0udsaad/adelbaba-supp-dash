@@ -27,8 +27,8 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
       const invalidTypeFiles = files.filter(f => !validTypes.includes(f.type))
       
       if (invalidTypeFiles.length > 0) {
-        toast.error("Invalid File Type", {
-          description: `${invalidTypeFiles.length} file(s) skipped. Only images are allowed in this section.`
+        toast.error(t.invalidFileType, {
+          description: `${invalidTypeFiles.length} ${t.fileSkipped}`
         })
       }
 
@@ -39,8 +39,8 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
       const invalidSizeFiles = files.filter(f => f.size > MAX_SIZE_BYTES);
 
       if (invalidSizeFiles.length > 0) {
-        toast.error("File Too Large", {
-          description: `${invalidSizeFiles.length} file(s) skipped. Max file size is ${MAX_SIZE_MB}MB.`
+        toast.error(t.fileTooLarge, {
+          description: `${invalidSizeFiles.length} ${t.maxFileSize.replace('{maxSizeMB}', String(MAX_SIZE_MB))}`
         })
       }
       
@@ -50,10 +50,10 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
         // Append new files to existing files instead of replacing
         onNewFiles([...newFiles, ...validFiles]);
         
-        toast.success(`${validFiles.length} file(s) added`, {
+        toast.success(`${validFiles.length} ${t.filesAdded}`, {
           description: validFiles.length === 1 
             ? validFiles[0].name 
-            : `${validFiles.length} media files ready to upload`,
+            : `${validFiles.length} ${t.mediaFilesReady}`,
           duration: 3000
         })
       }
@@ -75,7 +75,7 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
         <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center">
           <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
           <p className="mt-4 text-muted-foreground">{t.dragAndDropOrClick}</p>
-          <p className="text-xs text-muted-foreground mt-2">Max file size: 2MB per image</p>
+          <p className="text-xs text-muted-foreground mt-2">{t.maxFileSizePerImage}</p>
           <Input id="file-upload" type="file" accept="image/*" multiple className="sr-only" onChange={handleFileChange} />
           <Button  type="button" onClick={handleBrowseClick} className="mt-2 inline-block bg-primary text-primary-foreground px-4 py-2 rounded-md cursor-pointer">
             {t.browseFiles}
@@ -92,8 +92,8 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
                   className="absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100" 
                   onClick={() => {
                     onRemoveExisting(media.id)
-                    toast.info("Media marked for removal", {
-                      description: "This file will be deleted when you save the product",
+                    toast.info(t.mediaMarkedForRemoval, {
+                      description: t.fileWillBeDeleted,
                       duration: 3000
                     })
                   }}
@@ -111,10 +111,10 @@ export function MediaUpload({ existingMedia = [], onNewFiles, onRemoveExisting, 
                    className="absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100" 
                    onClick={() => {
                      onRemoveNew(file)
-                     toast("File removed", {
-                       description: file.name,
-                       duration: 2000
-                     })
+                    toast(t.fileRemoved, {
+                      description: file.name,
+                      duration: 2000
+                    })
                    }}
                  >
                   <X className="h-4 w-4" />
