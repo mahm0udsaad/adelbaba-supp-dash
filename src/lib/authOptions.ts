@@ -3,6 +3,21 @@ import GoogleProvider from "next-auth/providers/google"
 import FacebookProvider from "next-auth/providers/facebook"
 import CredentialsProvider from "next-auth/providers/credentials"
 
+class SocialLoginBackendError extends Error {
+  status?: number
+  responseBody?: string
+
+  constructor(message: string, status?: number, responseBody?: string) {
+    super(message)
+    this.name = "SocialLoginBackendError"
+    this.status = status
+    this.responseBody = responseBody
+  }
+}
+
+const SUPPLIER_REQUIRED_ERROR = "supplier_required"
+const SUPPLIER_REQUIRED_REDIRECT = `/login?error=${SUPPLIER_REQUIRED_ERROR}`
+
 async function exchangeWithBackend(params: { provider: "google" | "facebook"; token: string }) {
   const base = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || ""
   const url = `${base}/api/v1/company/login/social`
@@ -14,7 +29,7 @@ async function exchangeWithBackend(params: { provider: "google" | "facebook"; to
   if (!res.ok) {
     const text = await res.text()
     console.error("[NextAuth] /login/social backend error:", { status: res.status, body: text })
-    throw new Error(`Backend social login failed: ${res.status} ${text}`)
+    throw new SocialLoginBackendError(`Backend social login failed: ${res.status} ${text}`, res.status, text)
   }
   const data = await res.json() as any
   if (process.env.NODE_ENV !== "production") {
@@ -128,6 +143,32 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt" },
   callbacks: {
+    async signIn({ account }) {
+      if (account && (account.provider === "google" || account.provider === "facebook")) {
+        const providerToken = (account as any).id_token as string | undefined || (account as any).access_token as string | undefined
+        if (!providerToken) {
+          return true
+        }
+
+        try {
+          const data = await exchangeWithBackend({ provider: account.provider as any, token: providerToken })
+          ;(account as any).backendAuthData = data
+          return true
+        } catch (error) {
+          console.error("[NextAuth] Social login failed during signIn:", error)
+          if (
+            account.provider === "google" &&
+            error instanceof SocialLoginBackendError &&
+            error.status === 404
+          ) {
+            return SUPPLIER_REQUIRED_REDIRECT
+          }
+          throw error
+        }
+      }
+
+      return true
+    },
     async jwt({ token, account, profile, user }) {
       // Handle credentials login
       if (user && (account?.provider === "credentials" || !account)) {
@@ -156,40 +197,45 @@ export const authOptions: NextAuthOptions = {
         const idToken = (account as any).id_token as string | undefined
         const accessToken = (account as any).access_token as string | undefined
         const providerToken = idToken || accessToken
-        if (providerToken) {
+        let backendPayload = (account as any).backendAuthData
+
+        if (!backendPayload && providerToken) {
           try {
-            const data = await exchangeWithBackend({ provider: account.provider as any, token: providerToken })
-            token.appToken = data?.token
-            token.appUser = data?.user
-            token.roles = data?.roles || []
-            token.completionStatus = data?.completion_status || null
-            token.company = data?.company || null
-            if (process.env.NODE_ENV !== "production") {
-              console.log("[NextAuth] Social login successful:", data)
-            }
-            
-            // Save authentication data to localStorage for persistence
-            if (typeof window !== "undefined") {
-              try {
-                const authData = {
-                  user: data?.user,
-                  company: data?.company,
-                  roles: data?.roles || [],
-                  completionStatus: data?.completion_status || null,
-                  token: data?.token,
-                }
-                localStorage.setItem("adelbaba_auth_data", JSON.stringify(authData))
-                
-                // Save company data separately if it exists
-                if (data?.company) {
-                  localStorage.setItem("adelbaba_company_data", JSON.stringify(data.company))
-                }
-              } catch (error) {
-                console.error("Failed to save auth data to localStorage:", error)
-              }
-            }
+            backendPayload = await exchangeWithBackend({ provider: account.provider as any, token: providerToken })
           } catch (error) {
             console.error("[NextAuth] Social login failed:", error)
+          }
+        }
+
+        if (backendPayload) {
+          token.appToken = backendPayload?.token
+          token.appUser = backendPayload?.user
+          token.roles = backendPayload?.roles || []
+          token.completionStatus = backendPayload?.completion_status || null
+          token.company = backendPayload?.company || null
+          if (process.env.NODE_ENV !== "production") {
+            console.log("[NextAuth] Social login successful:", backendPayload)
+          }
+          
+          // Save authentication data to localStorage for persistence
+          if (typeof window !== "undefined") {
+            try {
+              const authData = {
+                user: backendPayload?.user,
+                company: backendPayload?.company,
+                roles: backendPayload?.roles || [],
+                completionStatus: backendPayload?.completion_status || null,
+                token: backendPayload?.token,
+              }
+              localStorage.setItem("adelbaba_auth_data", JSON.stringify(authData))
+              
+              // Save company data separately if it exists
+              if (backendPayload?.company) {
+                localStorage.setItem("adelbaba_company_data", JSON.stringify(backendPayload.company))
+              }
+            } catch (error) {
+              console.error("Failed to save auth data to localStorage:", error)
+            }
           }
         }
       }

@@ -1,8 +1,8 @@
 "use client"
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { signIn, getSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/src/contexts/auth-context"
 import { getRedirectPath } from "@/src/utils/auth-utils"
 import { cn } from "@/lib/utils"
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { BarChart3, Package, Users, TrendingUp, ShoppingCart, DollarSign, Globe, Truck } from "lucide-react"
 import LoginSocial from "@/src/features/auth/LoginSocial"
 import Link from "next/link"
@@ -24,6 +25,9 @@ type FormErrorState = {
 
 const DEFAULT_ERROR_MESSAGE =
   "We couldn't sign you in. Please check your credentials and try again."
+
+const SUPPLIER_REQUIRED_ERROR = "supplier_required"
+const SUPPLIER_REGISTRATION_URL = "https://adil-baba.com/en/sell/start-selling"
 
 const parseAuthError = (error: unknown): FormErrorState => {
   let rawMessage = ""
@@ -96,8 +100,30 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [formError, setFormError] = useState<FormErrorState | null>(null)
+  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false)
   const router = useRouter()
   const { authData } = useAuth()
+  const searchParams = useSearchParams()
+  const errorParam = searchParams?.get("error")
+
+  useEffect(() => {
+    setIsSupplierModalOpen(errorParam === SUPPLIER_REQUIRED_ERROR)
+  }, [errorParam])
+
+  const clearErrorQuery = () => {
+    if (!searchParams) return
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete("error")
+    const query = params.toString()
+    router.replace(query ? `/login?${query}` : "/login")
+  }
+
+  const handleSupplierModalChange = (open: boolean) => {
+    if (!open) {
+      clearErrorQuery()
+    }
+    setIsSupplierModalOpen(open)
+  }
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
@@ -328,7 +354,7 @@ export default function LoginPage() {
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                   New supplier? {" "}
-                  <Link href={"https://adil-baba.com/sell"} className="text-amber-600 hover:text-amber-700 font-medium bg-transparent border-none cursor-pointer">
+                  <Link href={SUPPLIER_REGISTRATION_URL} className="text-amber-600 hover:text-amber-700 font-medium bg-transparent border-none cursor-pointer" target="_blank" rel="noopener noreferrer">
                     Register your business
                   </Link>
                 </p>
@@ -337,6 +363,27 @@ export default function LoginPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={isSupplierModalOpen} onOpenChange={handleSupplierModalChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Complete your supplier registration</DialogTitle>
+            <DialogDescription>
+              We couldn't find an active supplier account associated with your Google email. Please register as a supplier to continue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="outline" onClick={() => handleSupplierModalChange(false)} className="flex-1">
+              Back to login
+            </Button>
+            <Button asChild className="flex-1 bg-amber-600 hover:bg-amber-700 text-white">
+              <Link href={SUPPLIER_REGISTRATION_URL} target="_blank" rel="noopener noreferrer">
+                Register now
+              </Link>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 "use client"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { signIn } from "next-auth/react"
 import { useState } from "react"
@@ -8,9 +9,8 @@ export default function LoginSocial() {
   const [isLoading, setIsLoading] = useState(false)
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null)
 
-  // For OAuth providers, NextAuth will always perform a full redirect
-  // through the provider and back. We set callbackUrl to "/" so that
-  // our app's root redirect logic can route to onboarding or dashboard.
+  // For OAuth providers, NextAuth performs a full redirect through the provider
+  // and back to our app root, where we decide whether to send the user to onboarding or the dashboard.
 
   const handleSocialLogin = async (provider: "google") => {
     setIsLoading(true)
@@ -42,11 +42,11 @@ export default function LoginSocial() {
   const onGoogle = () => handleSocialLogin("google")
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <Button 
-        type="button" 
-        variant="outline" 
-        className="w-full h-11" 
+    <div className="grid grid-cols-1 gap-3">
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full h-11 justify-center border-slate-200 bg-white text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
         onClick={onGoogle}
         disabled={isLoading}
       >
@@ -56,7 +56,10 @@ export default function LoginSocial() {
             <span>Connecting...</span>
           </div>
         ) : (
-          "Google"
+          <div className="flex items-center gap-2">
+            <Image src="/icons/google-color.svg" alt="Google" width={20} height={20} priority />
+            <span>Continue with Google</span>
+          </div>
         )}
       </Button>
     </div>

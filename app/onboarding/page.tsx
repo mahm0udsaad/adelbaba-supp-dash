@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -14,6 +15,7 @@ import {
   Package,
       Plus,
   Camera,
+  LayoutDashboard,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useAuth } from "@/src/contexts/auth-context"
@@ -55,6 +57,7 @@ interface CompletionStatus {
 }
 
 export default function OnboardingPage() {
+  const router = useRouter()
   const { data: session } = useSession()
   const { authData, fetchCompanyData, updateAuthData } = useAuth()
   const { company, isLoading: companyLoading, error: companyError, fetchCompany, updateCompany } = useCompanyHook()
@@ -599,6 +602,21 @@ export default function OnboardingPage() {
     }
   }
 
+  const handleSkipToDashboard = () => {
+    // Mark all completion status fields as true to skip onboarding
+    updateAuthData({
+      completionStatus: {
+        profile_completed: true,
+        warehouse_setup: true,
+        certificates_uploaded: true,
+        first_product_added: true,
+      },
+    })
+    
+    // Navigate to dashboard
+    router.push("/dashboard")
+  }
+
   const renderStepContent = () => {
     const step = steps[currentStep]
 
@@ -730,6 +748,18 @@ export default function OnboardingPage() {
   return (
     <div className="overflow-y-scroll h-screen bg-amber-50 p-4">
       <div className="max-w-6xl mx-auto">
+        {/* Dashboard Button */}
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="outline"
+            onClick={handleSkipToDashboard}
+            className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            Dashboard
+          </Button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8 animate-in fade-in-0 slide-in-from-top-4 duration-1000">
           <h1 className="text-4xl font-bold mb-3 text-gray-900">Welcome to Your Supplier Portal</h1>
