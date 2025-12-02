@@ -683,8 +683,47 @@ const handleSubmit = async (e: React.FormEvent) => {
     fd.append('product[is_active]', isActive ? '1' : '0')
     fd.append('product[category_id]', String(parseInt(categoryId)))
 
+    // Send content as FormData array entries (not JSON string)
+    // API expects: product[content][0][key]=value format
     if (content) {
-      fd.append('product[content]', JSON.stringify(content))
+      let contentIndex = 0
+      
+      // Add general info fields
+      if (content.general && Object.keys(content.general).length > 0) {
+        Object.entries(content.general).forEach(([key, value]) => {
+          if (value) {
+            fd.append(`product[content][${contentIndex}][type]`, 'general')
+            fd.append(`product[content][${contentIndex}][key]`, key)
+            fd.append(`product[content][${contentIndex}][value]`, String(value))
+            contentIndex++
+          }
+        })
+      }
+      
+      // Add each specification
+      if (content.specifications && content.specifications.length > 0) {
+        content.specifications.forEach(spec => {
+          if (spec.name || spec.value) {
+            fd.append(`product[content][${contentIndex}][type]`, 'specification')
+            fd.append(`product[content][${contentIndex}][name]`, spec.name || '')
+            fd.append(`product[content][${contentIndex}][value]`, spec.value || '')
+            contentIndex++
+          }
+        })
+      }
+      
+      // Add each shipping method
+      if (content.shipping && content.shipping.length > 0) {
+        content.shipping.forEach(ship => {
+          if (ship.method || ship.time || ship.cost) {
+            fd.append(`product[content][${contentIndex}][type]`, 'shipping')
+            fd.append(`product[content][${contentIndex}][method]`, ship.method || '')
+            fd.append(`product[content][${contentIndex}][time]`, ship.time || '')
+            fd.append(`product[content][${contentIndex}][cost]`, ship.cost || '')
+            contentIndex++
+          }
+        })
+      }
     }
 
     // Pricing fields
@@ -717,8 +756,13 @@ const handleSubmit = async (e: React.FormEvent) => {
       }))
     }
 
-    const appendSkuToFormData = (sku: EnhancedSku, skuIndex: number, mode: 'add' | 'modify') => {
-      const prefix = `skus[${mode}][${skuIndex}]`
+    // Helper function to append SKU to FormData
+    // For CREATE: uses flat `skus[index]` structure
+    // For UPDATE: uses `skus[add/modify/remove]` structure
+    const appendSkuToFormData = (sku: EnhancedSku, skuIndex: number, mode: 'flat' | 'add' | 'modify') => {
+      // For create (flat), use skus[index]; for edit use skus[mode][index]
+      const prefix = mode === 'flat' ? `skus[${skuIndex}]` : `skus[${mode}][${skuIndex}]`
+      
       if (mode === 'modify' && sku.id) {
         fd.append(`${prefix}[id]`, String(sku.id))
       }
@@ -763,18 +807,13 @@ const handleSubmit = async (e: React.FormEvent) => {
       }
     }
 
-    const skuAddEntries: EnhancedSku[] = []
-    const skuModifyEntries: EnhancedSku[] = []
+    // Collect SKUs to process
+    const allSkusToProcess: EnhancedSku[] = []
 
     if (priceType === 'sku') {
-      enhancedSkus.forEach(sku => {
-        if (sku.id) {
-          skuModifyEntries.push(sku)
-        } else {
-          skuAddEntries.push(sku)
-        }
-      })
+      allSkusToProcess.push(...enhancedSkus)
     } else {
+      // For range/tiered pricing, create a default SKU
       const fallbackWarehouseIds = selectedWarehouseIds.length
         ? selectedWarehouseIds
         : (warehouses.length ? [warehouses[0].id] : [])
@@ -811,21 +850,49 @@ const handleSubmit = async (e: React.FormEvent) => {
         ]
       }
       
-      skuAddEntries.push(defaultSku)
+      allSkusToProcess.push(defaultSku)
     }
 
-    skuAddEntries.forEach((sku, index) => appendSkuToFormData(sku, index, 'add'))
-    skuModifyEntries.forEach((sku, index) => appendSkuToFormData(sku, index, 'modify'))
-
-    if (removedSkuIds.length > 0) {
-      removedSkuIds.forEach(id => fd.append('skus[remove][]', String(id)))
+    // For CREATE: use flat skus[] array
+    // For EDIT: use skus[add/modify/remove] structure
+    if (isEditMode) {
+      // Edit mode: separate into add/modify
+      const skuAddEntries: EnhancedSku[] = []
+      const skuModifyEntries: EnhancedSku[] = []
+      
+      allSkusToProcess.forEach(sku => {
+        if (sku.id) {
+          skuModifyEntries.push(sku)
+        } else {
+          skuAddEntries.push(sku)
+        }
+      })
+      
+      skuAddEntries.forEach((sku, index) => appendSkuToFormData(sku, index, 'add'))
+      skuModifyEntries.forEach((sku, index) => appendSkuToFormData(sku, index, 'modify'))
+      
+      if (removedSkuIds.length > 0) {
+        removedSkuIds.forEach(id => fd.append('skus[remove][]', String(id)))
+      }
+    } else {
+      // Create mode: use flat skus[] array (as per API spec)
+      allSkusToProcess.forEach((sku, index) => appendSkuToFormData(sku, index, 'flat'))
     }
 
     // Media files
+    // For CREATE: use media[] (flat array)
+    // For EDIT: use media[add][] and media[remove][]
     if (newMediaFiles.length > 0) {
-      newMediaFiles.forEach((file) => {
-        fd.append('media[add][]', file)
-      })
+      if (isEditMode) {
+        newMediaFiles.forEach((file) => {
+          fd.append('media[add][]', file)
+        })
+      } else {
+        // Create mode: API expects flat media[] array
+        newMediaFiles.forEach((file) => {
+          fd.append('media[]', file)
+        })
+      }
     }
 
     // Video
@@ -841,11 +908,26 @@ const handleSubmit = async (e: React.FormEvent) => {
     // Debug logging
     if (process.env.NODE_ENV === 'development') {
       console.group('📦 FormData Summary:')
+      console.log('Mode:', isEditMode ? 'EDIT' : 'CREATE')
       console.log('Price Type:', priceType)
-      console.log('SKU Count:', priceType === 'sku' ? enhancedSkus.length : 1)
-      const keys = Array.from(fd.keys())
-      console.log('FormData Keys:', keys.length)
+      console.log('SKU Count:', allSkusToProcess.length)
+      
+      // Log all FormData entries for debugging
+      const entries: Record<string, any> = {}
+      fd.forEach((value, key) => {
+        if (value instanceof File) {
+          entries[key] = `[File: ${value.name}, ${value.size} bytes]`
+        } else {
+          entries[key] = value
+        }
+      })
+      console.log('FormData Entries:', entries)
+      
+      // Show SKU-related keys
+      const keys = Object.keys(entries)
       console.log('SKU-related keys:', keys.filter(k => k.startsWith('skus[')))
+      console.log('Media-related keys:', keys.filter(k => k.startsWith('media')))
+      console.log('Product content:', entries['product[content]'])
       console.groupEnd()
     }
 
