@@ -18,7 +18,7 @@ export function ProductContent({ content, setContent }: ProductContentProps) {
   const { t } = useI18n()
   const [hasContent, setHasContent] = useState(!!content)
 
-  // Sync hasContent with incoming content changes (e.g., Fill Sample Data)
+  // Sync hasContent with incoming content changes
   useEffect(() => {
     if (content) {
       setHasContent(true)

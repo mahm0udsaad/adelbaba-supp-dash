@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useI18n } from "@/lib/i18n/context"
 import { ProductDetail } from "@/src/services/types/product-types"
@@ -21,7 +20,7 @@ import { ProductContent } from "./ProductContent"
 import { CategorySelector } from "./CategorySelector"
 import { QuickWarehouseModal } from "./QuickWarehouseModal"
 import { VideoUpload } from "./VideoUpload"
-import { Wand2, Loader2, AlertCircle, CheckCircle, FolderTree } from "lucide-react"
+import { Loader2, AlertCircle, CheckCircle, FolderTree } from "lucide-react"
 import { toast } from "sonner"
 import type { ProductContentBlock, ProductSku } from "@/src/services/types/product-types"
 
@@ -107,16 +106,16 @@ const normalizeContent = (incoming?: ProductContentBlock | string | null): Produ
 
   return {
     general: { ...base.general, ...(parsed.general || {}) },
-    specifications: (parsed.specifications && parsed.specifications.length > 0
+    specifications: ((parsed.specifications && parsed.specifications.length > 0
       ? parsed.specifications
-      : base.specifications
+      : base.specifications) || []
     ).map(spec => ({
       name: spec?.name ?? "",
       value: spec?.value ?? "",
     })),
-    shipping: (parsed.shipping && parsed.shipping.length > 0
+    shipping: ((parsed.shipping && parsed.shipping.length > 0
       ? parsed.shipping
-      : base.shipping
+      : base.shipping) || []
     ).map(method => ({
       method: method?.method ?? "",
       time: method?.time ?? "",
@@ -127,9 +126,9 @@ const normalizeContent = (incoming?: ProductContentBlock | string | null): Produ
 
 const normalizeSkuFromApi = (sku: ProductSku): EnhancedSku => {
   const packageDetails = {
-    mass_unit: sku.package_details?.mass_unit ?? "kg",
+    mass_unit: (sku.package_details?.mass_unit ?? "kg") as "g" | "kg" | "lb" | "oz",
     weight: Number(sku.package_details?.weight ?? 0),
-    distance_unit: sku.package_details?.distance_unit ?? "cm",
+    distance_unit: (sku.package_details?.distance_unit ?? "cm") as "cm" | "in" | "ft" | "m" | "mm" | "yd",
     height: Number(sku.package_details?.height ?? 0),
     length: Number(sku.package_details?.length ?? 0),
     width: Number(sku.package_details?.width ?? 0),
@@ -163,208 +162,9 @@ const normalizeSkuFromApi = (sku: ProductSku): EnhancedSku => {
   };
 };
 
-// Development sample data
-const SAMPLE_DATA = {
-  name: "Wireless Bluetooth Headphones - Premium Quality",
-  description: "High-quality wireless Bluetooth headphones with advanced noise cancellation, premium sound quality, and extended battery life. Perfect for music lovers, professionals, and gamers who demand the best audio experience. Features include touch controls, voice assistant support, and quick charge capability.",
-  categoryId: "1",
-  moq: 50,
-  productUnitId: 1,
-  isActive: true,
-  priceType: "sku" as const,
-  rangePrice: { min_price: "25.00", max_price: "45.00" },
-  tieredPrices: [
-    { min_quantity: 50, price: 32 },
-    { min_quantity: 100, price: 30 },
-    { min_quantity: 500, price: 28 },
-    { min_quantity: 1000, price: 25 },
-    { min_quantity: 2000, price: 23 }
-  ],
-  enhancedSkus: [
-    {
-      code: "WBH-BLACK-PREMIUM-001",
-      price: 32.00,
-      inventory: {
-        warehouses: [
-          {
-            warehouse_id: 31,
-            on_hand: 100,
-            reserved: 10,
-            reorder_point: 20,
-            restock_level: 50,
-            track_inventory: true
-          }
-        ]
-      },
-      attributes: [
-        { type: "select", variation_value_id: 5 },
-        { type: "color", variation_value_id: 7, hex_color: "#000000" },
-        { type: "select", variation_value_id: 8 }
-      ]
-    },
-    {
-      code: "WBH-WHITE-STANDARD-002", 
-      price: 28.00,
-      inventory: {
-        warehouses: [
-          {
-            warehouse_id: 31,
-            on_hand: 150,
-            reserved: 5,
-            reorder_point: 25,
-            restock_level: 75,
-            track_inventory: true
-          }
-        ]
-      },
-      attributes: [
-        { type: "select", variation_value_id: 6 },
-        { type: "color", variation_value_id: 9, hex_color: "#FFFFFF" },
-        { type: "select", variation_value_id: 10 }
-      ]
-    },
-    {
-      code: "WBH-BLUE-GAMING-003",
-      price: 35.00,
-      inventory: {
-        warehouses: [
-          {
-            warehouse_id: 31,
-            on_hand: 75,
-            reserved: 15,
-            reorder_point: 15,
-            restock_level: 40,
-            track_inventory: true
-          }
-        ]
-      },
-      attributes: [
-        { type: "select", variation_value_id: 11 },
-        { type: "color", variation_value_id: 12, hex_color: "#0066CC" },
-        { type: "select", variation_value_id: 13 },
-        { type: "select", variation_value_id: 14 }
-      ]
-    }
-  ],
-  content: {
-    general: { 
-      name: "TechSound Pro Wireless Headphones",
-      material: "Premium ABS Plastic, Memory Foam, Stainless Steel",
-      brand: "TechSound Pro",
-      model: "WBH-2024-PRO-001",
-      weight: "280g",
-      dimensions: "190 x 160 x 80 mm",
-      color: "Black, White, Blue",
-      warranty: "1-3 Years (varies by edition)",
-      certification: "CE, FCC, RoHS",
-      origin: "Made in China",
-      packaging: "Premium Gift Box with Accessories"
-    },
-    specifications: [
-      // Audio Specifications
-      { name: "Bluetooth Version", value: "5.3 with aptX HD" },
-      { name: "Audio Codecs", value: "SBC, AAC, aptX, aptX HD" },
-      { name: "Driver Size", value: "40mm Neodymium" },
-      { name: "Frequency Response", value: "20Hz - 40kHz" },
-      { name: "Impedance", value: "32Ω ±15%" },
-      { name: "Sensitivity", value: "110dB ±3dB" },
-      { name: "THD", value: "<0.1% (1kHz, 1mW)" },
-      
-      // Battery & Power
-      { name: "Battery Capacity", value: "600mAh Lithium" },
-      { name: "Playback Time", value: "30 hours (ANC off), 25 hours (ANC on)" },
-      { name: "Talk Time", value: "35 hours" },
-      { name: "Standby Time", value: "200 hours" },
-      { name: "Charging Time", value: "2 hours (full), 15 min (3 hours play)" },
-      { name: "Charging Port", value: "USB-C with fast charge" },
-      
-      // Features
-      { name: "Active Noise Cancellation", value: "Yes, up to -35dB" },
-      { name: "Transparency Mode", value: "Yes, adjustable" },
-      { name: "Touch Controls", value: "Gesture control with customization" },
-      { name: "Voice Assistant", value: "Siri, Google Assistant, Alexa" },
-      { name: "Multipoint Connection", value: "Connect 2 devices simultaneously" },
-      { name: "App Support", value: "TechSound Pro App (iOS/Android)" },
-      { name: "Water Resistance", value: "IPX4 rated" },
-      
-      // Physical
-      { name: "Operating Range", value: "10 meters (33 feet)" },
-      { name: "Operating Temperature", value: "-10°C to +55°C" },
-      { name: "Storage Temperature", value: "-20°C to +60°C" },
-      { name: "Foldable Design", value: "Yes, 90° swivel + fold flat" }
-    ],
-    shipping: [
-      { 
-        method: "Express Shipping", 
-        time: "5-7 business days", 
-        cost: "$15.00",
-        description: "DHL/FedEx with tracking and insurance"
-      },
-      { 
-        method: "Standard Shipping", 
-        time: "10-15 business days", 
-        cost: "$8.00",
-        description: "Regular postal service with basic tracking"
-      },
-      { 
-        method: "Economy Shipping", 
-        time: "20-30 business days", 
-        cost: "$3.00",
-        description: "Slowest but most economical option"
-      },
-      {
-        method: "Air Freight (Bulk)",
-        time: "7-12 business days",
-        cost: "Contact for quote",
-        description: "Best for orders over 1000 units"
-      }
-    ],
-    features: [
-      "Advanced Active Noise Cancellation up to -35dB",
-      "Premium 40mm Neodymium drivers for exceptional sound",
-      "30-hour battery life with quick 15-minute charge",
-      "Bluetooth 5.3 with aptX HD for superior audio quality",
-      "Comfortable memory foam ear cushions",
-      "Intuitive touch controls with gesture support",
-      "Voice assistant compatibility (Siri, Google, Alexa)",
-      "Foldable design for easy storage and travel",
-      "IPX4 water resistance for workout protection",
-      "Multipoint connection for two devices",
-      "Dedicated mobile app for customization"
-    ],
-    whatsIncluded: [
-      "1x Wireless Bluetooth Headphones",
-      "1x Premium Carrying Case", 
-      "1x USB-C Charging Cable (1.2m)",
-      "1x 3.5mm Audio Cable (1.5m)",
-      "1x Airplane Adapter",
-      "1x Quick Start Guide",
-      "1x Warranty Card",
-      "1x Premium Gift Box"
-    ],
-    targetMarkets: [
-      "Music enthusiasts and audiophiles",
-      "Business professionals for calls and meetings", 
-      "Gamers seeking immersive audio experience",
-      "Students for online learning and entertainment",
-      "Travelers who need noise cancellation",
-      "Fitness enthusiasts with water-resistant needs"
-    ],
-    qualityAssurance: [
-      "ISO 9001:2015 certified manufacturing",
-      "100% tested before shipping",
-      "CE, FCC, RoHS compliance",
-      "Quality control at every production stage",
-      "30-day money-back guarantee",
-      "Comprehensive warranty coverage"
-    ]
-  }
-}
-
 export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps) {
   const { t } = useI18n()
   const isEditMode = !!initialData
-  const isDevelopment = process.env.NODE_ENV === 'development'
 
   // Form validation errors
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -475,23 +275,6 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
     }
   }, [isEditMode])
 
-  // Auto-fill function for development
-  const fillSampleData = () => {
-    setName(SAMPLE_DATA.name)
-    setDescription(SAMPLE_DATA.description)
-    setCategoryId(SAMPLE_DATA.categoryId)
-    setMoq(SAMPLE_DATA.moq)
-    setProductUnitId(SAMPLE_DATA.productUnitId)
-    setIsActive(SAMPLE_DATA.isActive)
-    setPriceType(SAMPLE_DATA.priceType)
-    setRangePrice(SAMPLE_DATA.rangePrice)
-    setTieredPrices(SAMPLE_DATA.tieredPrices)
-    setEnhancedSkus(SAMPLE_DATA.enhancedSkus)
-    setContent(normalizeContent(SAMPLE_DATA.content as ProductContentBlock))
-    setExistingVideoUrl(null)
-    setErrors({}) // Clear any validation errors
-  }
-
   // Form validation
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -586,7 +369,11 @@ export function ProductForm({ initialData, onSubmit, loading }: ProductFormProps
         setRangePrice({ min_price: initialData.rangePrices.minPrice, max_price: initialData.rangePrices.maxPrice })
       }
       if (initialData.price_type === "tiered") {
-        setTieredPrices(initialData.tieredPrices || [])
+        const normalizedTieredPrices = (initialData.tieredPrices || []).map(tier => ({
+          min_quantity: tier.min_quantity ?? tier.minQuantity ?? 1,
+          price: typeof tier.price === "string" ? parseFloat(tier.price) : tier.price ?? 0
+        }))
+        setTieredPrices(normalizedTieredPrices)
       }
 
       if (initialData.skus) {
@@ -1006,19 +793,6 @@ const handleSubmit = async (e: React.FormEvent) => {
               className="flex items-center gap-2"
             >
               {t.loadDraft}
-            </Button>
-          )}
-          
-          {isDevelopment && !isEditMode && (
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={fillSampleData}
-              className="flex items-center gap-2 border-dashed"
-            >
-              <Wand2 className="h-4 w-4" />
-              {t.fillSampleData}
-              <Badge variant="secondary" className="text-xs">DEV</Badge>
             </Button>
           )}
         </div>

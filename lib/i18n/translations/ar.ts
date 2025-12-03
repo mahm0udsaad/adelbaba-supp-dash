@@ -343,7 +343,6 @@ export const ar: TranslationKeys = {
   restockLevel: "مستوى إعادة التخزين",
   updateProductInfo: "قم بتحديث معلومات المنتج الخاصة بك",
   loadDraft: "تحميل المسودة",
-  fillSampleData: "ملء بيانات تجريبية",
   selectWarehouses: "اختر المستودعات",
   chooseWarehouses: "اختر المستودعات التي ستتتبع المخزون لهذا المنتج",
   loadingWarehouses: "جاري تحميل المستودعات...",

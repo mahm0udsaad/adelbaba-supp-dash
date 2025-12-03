@@ -342,7 +342,6 @@ export interface TranslationKeys {
   restockLevel: string
   updateProductInfo: string
   loadDraft: string
-  fillSampleData: string
   selectWarehouses: string
   chooseWarehouses: string
   loadingWarehouses: string
@@ -355,6 +354,7 @@ export interface TranslationKeys {
   productContent: string
   addDetailedSpecs: string
   uploadProductImages: string
+  basicInformation: string
   choosePricingStrategy: string
   saveAndPublish: string
   saveAsDraft: string

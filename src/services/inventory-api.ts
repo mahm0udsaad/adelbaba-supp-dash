@@ -20,6 +20,11 @@ export async function listWarehouses(): Promise<{ data: Warehouse[] }> {
   return res.data
 }
 
+export async function getWarehouse(id: number | string): Promise<{ data: Warehouse }> {
+  const res = await apiClient.get(`/v1/company/warehouses/${id}`)
+  return res.data
+}
+
 export async function createWarehouse(body: {
   name: string
   address?: string

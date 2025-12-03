@@ -343,7 +343,6 @@ export const en: TranslationKeys = {
   restockLevel: "Restock Level",
   updateProductInfo: "Update your product information",
   loadDraft: "Load Draft",
-  fillSampleData: "Fill Sample Data",
   selectWarehouses: "Select Warehouses",
   chooseWarehouses: "Choose which warehouses will track inventory for this product",
   loadingWarehouses: "Loading warehouses...",
